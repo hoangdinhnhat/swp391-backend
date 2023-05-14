@@ -5,9 +5,12 @@
 package com.swp391.backend.controllers.authentication;
 
 import com.swp391.backend.model.user.UserDTO;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -39,10 +42,16 @@ public class AuthenticationController {
         return ResponseEntity.ok().body(service.registration(request));
     }
     
+    @PostMapping("/signout")
+    public ResponseEntity<String> signout(HttpServletRequest request)
+    {
+        return ResponseEntity.ok().body(service.signout());
+    }
+    
     @GetMapping("/reset/find")
     public ResponseEntity<UserDTO> restFind(@RequestParam("email") String email)
     {
-        return ResponseEntity.ok().body(service.restFind(email));
+        return ResponseEntity.ok().body(service.resetFind(email));
     }
     
     @PostMapping("/reset/send")

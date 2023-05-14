@@ -46,6 +46,8 @@ public class User implements UserDetails{
     private String email;
     private String password;
     private String imageurl;
+    @Enumerated(EnumType.STRING)
+    private Gender gender;
     private boolean isLogout = true;
     @Enumerated(EnumType.STRING)
     private Role role;

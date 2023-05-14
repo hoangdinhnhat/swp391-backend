@@ -4,6 +4,9 @@
  */
 package com.swp391.backend.controllers.authentication;
 
+import com.swp391.backend.model.user.Gender;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -21,4 +24,6 @@ public class RegistrationRequest {
     private String lastname;
     private String email;
     private String password;
+    @Enumerated(EnumType.STRING)
+    private Gender gender;
 }

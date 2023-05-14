@@ -12,11 +12,9 @@ import com.swp391.backend.model.user.UserDTO;
 import com.swp391.backend.model.user.UserService;
 import com.swp391.backend.security.JwtService;
 import java.time.LocalDateTime;
-import java.time.Month;
 import java.time.ZoneId;
 import java.util.Date;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -36,6 +34,7 @@ public class AuthenticationService {
     private final AuthenticationManager authenticationManager;
     private final UserService userService;
     private final TokenService tokenService;
+    private final AuthenticatedManager authenticatedManager;
 
     public AuthenticationResponse authentication(AuthenticationRequest request) {
         User user = (User) userService.loadUserByUsername(request.getEmail());
@@ -71,6 +70,7 @@ public class AuthenticationService {
                 .build();
 
         tokenService.save(authToken);
+        authenticatedManager.setAuthenticatedUser(user);
         return AuthenticationResponse.builder()
                 .token(jwtToken)
                 .build();
@@ -85,6 +85,7 @@ public class AuthenticationService {
                 .firstname(request.getFirstname())
                 .lastname(request.getLastname())
                 .email(request.getEmail())
+                .gender(request.getGender())
                 .password(passwordEncoder.encode(request.getPassword()))
                 .role(Role.CUSTOMER)
                 .build();
@@ -94,8 +95,21 @@ public class AuthenticationService {
                 .status("Registration Successfully")
                 .build();
     }
+    
+    public String signout()
+    {
+        User user = (User) authenticatedManager.getAuthenticatedUser();
+        if(user == null)
+        {
+            return "Authentication First";
+        }
+        user.setLogout(true);
+        userService.save(user);
+        authenticatedManager.setAuthenticatedUser(null);
+        return "Logout Successfully!";
+    }
 
-    public UserDTO restFind(@RequestParam("email") String email) {
+    public UserDTO resetFind(@RequestParam("email") String email) {
         User user = (User) userService.loadUserByUsername(email);
         return UserDTO.builder()
                 .email(user.getEmail())
@@ -105,11 +119,6 @@ public class AuthenticationService {
     }
 
     public ResetResponse resetSend(UserDTO userDTO) {
-        if (userDTO == null) {
-            return ResetResponse.builder()
-                    .status("User that need to reset is null")
-                    .build();
-        }
         User user = (User) userService.loadUserByUsername(userDTO.getEmail());
         String forgetCode = Math.round((Math.random() * 899999 + 100000)) + "";
         System.out.println("Forget Code: " + forgetCode);
@@ -129,11 +138,6 @@ public class AuthenticationService {
     }
 
     public ResetResponse resetConfirm(UserDTO userDTO, String code) {
-        if (userDTO == null) {
-            return ResetResponse.builder()
-                    .status("User that need to reset is null")
-                    .build();
-        }
         String status = "Confirm Succesfully";
         User user = (User) userService.loadUserByUsername(userDTO.getEmail());
         Token resetToken = tokenService.findByUserAndType(user, "reset");

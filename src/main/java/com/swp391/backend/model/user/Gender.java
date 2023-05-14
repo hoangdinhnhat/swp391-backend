@@ -4,20 +4,12 @@
  */
 package com.swp391.backend.model.user;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-
 /**
  *
  * @author Lenovo
  */
-@Data
-@Builder
-@AllArgsConstructor
-public class UserDTO {
-    private String email;
-    private String fullname;
-    private String imageurl;
-    private String gender;
+public enum Gender {
+    MALE,
+    FEMALE,
+    OTHER
 }
