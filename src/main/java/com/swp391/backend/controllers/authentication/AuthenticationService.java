@@ -15,7 +15,8 @@ import com.swp391.backend.model.user.User;
 import com.swp391.backend.model.user.UserDTO;
 import com.swp391.backend.model.user.UserService;
 import com.swp391.backend.security.JwtService;
-import com.swp391.backend.utils.mail.GMailer;
+import com.swp391.backend.utils.mail.ConfirmCodeTemplete;
+import com.swp391.backend.utils.mail.EmailSender;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.time.LocalDateTime;
@@ -23,8 +24,6 @@ import java.time.ZoneId;
 import java.util.Collections;
 import java.util.Date;
 import java.util.UUID;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -48,6 +47,7 @@ public class AuthenticationService {
     private final UserService userService;
     private final TokenService tokenService;
     private final AuthenticatedManager authenticatedManager;
+    private final EmailSender gmailSender;
 
     public AuthenticationResponse authentication(AuthenticationRequest request) {
         User user = (User) userService.loadUserByUsername(request.getEmail());
@@ -66,6 +66,7 @@ public class AuthenticationService {
                 tokenService.delete(authToken);
             }
         }
+        user.setTimeout(new Date(System.currentTimeMillis() + 1000 * 60 * 30));
         userService.save(user);
         String jwtToken = jwtService.generateToken(user);
         LocalDateTime expiredAt = jwtService.extractExpiration(jwtToken)
@@ -153,7 +154,7 @@ public class AuthenticationService {
         return null;
     }
 
-    public RegistrationResponse registration(RegistrationRequest request) {
+    public RegistrationResponse registration(RegistrationRequest request) throws Exception {
         boolean isExist = userService.isExist(request.getEmail());
         if (isExist) {
             throw new IllegalStateException("Email is already taken!");
@@ -171,43 +172,36 @@ public class AuthenticationService {
         userService.save(user);
         String confToken = UUID.randomUUID().toString();
         Token registration = Token.builder()
-                        .createAt(LocalDateTime.now())
-                        .expiredAt(LocalDateTime.now().plusMinutes(15))
-                        .value(confToken)
-                        .user(user)
-                        .type("regis")
-                        .build();
+                .createAt(LocalDateTime.now())
+                .expiredAt(LocalDateTime.now().plusMinutes(15))
+                .value(confToken)
+                .user(user)
+                .type("regis")
+                .build();
         tokenService.save(registration);
-        GMailer gmailer;
-        try {
-            gmailer = new GMailer();
-            gmailer.sendMail("LINK", "http://localhost:8080/api/v1/auths/registration/confirm?token=" + confToken, user.getEmail());
-        } catch (Exception ex) {
-            Logger.getLogger(AuthenticationService.class.getName()).log(Level.SEVERE, null, ex);
-        }
+        String templete = ConfirmCodeTemplete.getTemplete("Bird Trading Platform", "http://localhost:8080/api/v1/auths/registration/confirm?token=" + confToken);
+        gmailSender.send("Registration Confirmation", templete, user.getEmail());
+        
         return RegistrationResponse.builder()
                 .email(user.getEmail())
                 .status("Registered successfully. Please verify your email to activate your account!")
                 .build();
     }
-    
-    public RegistrationResponse registrationConfirm(String token)
-    {
+
+    public RegistrationResponse registrationConfirm(String token) {
         Token confToken = tokenService.findByValue(token);
-        
-        if(confToken.getConfirmedAt() != null)
-        {
+
+        if (confToken.getConfirmedAt() != null) {
             throw new IllegalStateException("Email already confirmed");
         }
-        
+
         LocalDateTime expiredAt = confToken.getExpiredAt();
-        if(expiredAt.isBefore(LocalDateTime.now()))
-        {
+        if (expiredAt.isBefore(LocalDateTime.now())) {
             throw new IllegalStateException("Token expired");
         }
         confToken.setConfirmedAt(LocalDateTime.now());
         tokenService.save(confToken);
-         userService.enableUser(confToken.getUser());
+        userService.enableUser(confToken.getUser());
         return RegistrationResponse.builder()
                 .email(confToken.getUser().getEmail())
                 .status("Verify email successfully.")

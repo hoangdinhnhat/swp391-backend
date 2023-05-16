@@ -31,13 +31,11 @@ public class UserService implements UserDetailsService {
         return user;
     }
     
-    public UserDetails loadUserByUsername(String username, HttpServletResponse response) throws UsernameNotFoundException {
+    public UserDetails loadUserByUsername(String username, String filter) throws UsernameNotFoundException {
         User user = (User) repository.findByEmail(username)
                 .orElse(null);
         if(user == null || user.getTimeout() == null)
         {
-            Cookie cookie = new Cookie("Authorization", "");
-            response.addCookie(cookie);
             return null;
         }
         return user;

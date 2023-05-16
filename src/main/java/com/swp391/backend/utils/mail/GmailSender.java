@@ -28,18 +28,16 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Paths;
 import java.util.Properties;
-import java.util.Set;
-
-import static com.google.api.services.gmail.GmailScopes.GMAIL_SEND;
 import java.util.Collections;
-import static javax.mail.Message.RecipientType.TO;
+import org.springframework.stereotype.Service;
 
-public class GMailer {
+@Service
+public class GmailSender implements EmailSender{
 
-    private static final String TEST_EMAIL = "nhathocjavaweb@gmail.com";
+    private static final String TEST_EMAIL = "swp391.birdtrading@gmail.com";
     private final Gmail service;
 
-    public GMailer() throws Exception {
+    public GmailSender() throws Exception {
         NetHttpTransport httpTransport = GoogleNetHttpTransport.newTrustedTransport();
         GsonFactory jsonFactory = GsonFactory.getDefaultInstance();
         service = new Gmail.Builder(httpTransport, jsonFactory, getCredentials(httpTransport, jsonFactory))
@@ -47,9 +45,9 @@ public class GMailer {
                 .build();
     }
 
-    private static Credential getCredentials(final NetHttpTransport httpTransport, GsonFactory jsonFactory)
+    private Credential getCredentials(final NetHttpTransport httpTransport, GsonFactory jsonFactory)
             throws IOException {
-        GoogleClientSecrets clientSecrets = GoogleClientSecrets.load(jsonFactory, new InputStreamReader(GMailer.class.getResourceAsStream("/credentials.json")));
+        GoogleClientSecrets clientSecrets = GoogleClientSecrets.load(jsonFactory, new InputStreamReader(GmailSender.class.getResourceAsStream("/credentials.json")));
 
         GoogleAuthorizationCodeFlow flow = new GoogleAuthorizationCodeFlow.Builder(
                 httpTransport, jsonFactory, clientSecrets, Collections.singletonList(GmailScopes.GMAIL_SEND))
@@ -61,7 +59,8 @@ public class GMailer {
         return new AuthorizationCodeInstalledApp(flow, receiver).authorize("user");
     }
 
-    public void sendMail(String subject, String message, String targetEmail) throws Exception {
+    @Override
+    public void send(String subject, String message, String targetEmail) throws Exception {
         Properties props = new Properties();
         Session session = Session.getDefaultInstance(props, null);
         MimeMessage email = new MimeMessage(session);
@@ -90,12 +89,6 @@ public class GMailer {
                 throw e;
             }
         }
-    }
-
-    public static void main(String[] args) throws Exception {
-        OrderConfirmation confirmCodeTemplete = new OrderConfirmation();
-        String message = confirmCodeTemplete.getTemplete("Shopping Cart", "123456");
-        new GMailer().sendMail("A new message", message, "bestspterfpt@gmail.com");
     }
 
 }
