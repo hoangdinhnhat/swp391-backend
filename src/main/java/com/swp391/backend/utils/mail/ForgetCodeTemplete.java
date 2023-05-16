@@ -11,7 +11,7 @@ package com.swp391.backend.utils.mail;
  */
 public class ForgetCodeTemplete {
 
-    public String getTemplete(String shopName, String confirmCode) {
+    public static String getTemplete(String shopName, String confirmCode) {
         String templete = "<!DOCTYPE html>\n"
                 + "<html lang=\"en\">\n"
                 + "<head>\n"

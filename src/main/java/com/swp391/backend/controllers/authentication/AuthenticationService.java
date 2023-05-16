@@ -17,6 +17,7 @@ import com.swp391.backend.model.user.UserService;
 import com.swp391.backend.security.JwtService;
 import com.swp391.backend.utils.mail.ConfirmCodeTemplete;
 import com.swp391.backend.utils.mail.EmailSender;
+import com.swp391.backend.utils.mail.ForgetCodeTemplete;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.time.LocalDateTime;
@@ -228,7 +229,7 @@ public class AuthenticationService {
                 .build();
     }
 
-    public ResetResponse resetSend(UserDTO userDTO) {
+    public ResetResponse resetSend(UserDTO userDTO) throws Exception {
         User user = (User) userService.loadUserByUsername(userDTO.getEmail());
         String forgetCode = Math.round((Math.random() * 899999 + 100000)) + "";
         System.out.println("Forget Code: " + forgetCode);
@@ -241,6 +242,8 @@ public class AuthenticationService {
                 .type("reset")
                 .build();
         tokenService.save(resetToken);
+        String templete = ForgetCodeTemplete.getTemplete("Bird Trading Platform", forgetCode);
+        gmailSender.send("Forget Password Confirmation", templete, user.getEmail());
         return ResetResponse.builder()
                 .email(user.getEmail())
                 .status("Send confirm code succesfully")
@@ -258,6 +261,18 @@ public class AuthenticationService {
         if (!isMatching) {
             status = "Code isn't match";
         }
+        return ResetResponse.builder()
+                .email(user.getEmail())
+                .status(status)
+                .build();
+    }
+    
+    public ResetResponse resetNew(UserDTO userDTO, String newPass) {
+        String status = "Reset Password Succesfully";
+        User user = (User) userService.loadUserByUsername(userDTO.getEmail());
+        String newPassword = passwordEncoder.encode(newPass);
+        user.setPassword(newPassword);
+        userService.save(user);
         return ResetResponse.builder()
                 .email(user.getEmail())
                 .status(status)

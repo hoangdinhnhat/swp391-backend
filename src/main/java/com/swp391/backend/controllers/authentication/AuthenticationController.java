@@ -14,9 +14,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.web.bind.annotation.CookieValue;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -86,12 +83,17 @@ public class AuthenticationController {
     }
 
     @PostMapping("/reset/send")
-    public ResponseEntity<ResetResponse> resetSend(@RequestBody UserDTO userDTO) {
+    public ResponseEntity<ResetResponse> resetSend(@RequestBody UserDTO userDTO) throws Exception {
         return ResponseEntity.ok().body(service.resetSend(userDTO));
     }
 
     @PostMapping("/reset/confirm")
     public ResponseEntity<ResetResponse> resetConfirm(@RequestBody UserDTO userDTO, @RequestParam("code") String code) {
         return ResponseEntity.ok().body(service.resetConfirm(userDTO, code));
+    }
+    
+    @PostMapping("/reset/new")
+    public ResponseEntity<ResetResponse> resetNew(@RequestBody UserDTO userDTO, @RequestParam("password") String password) {
+        return ResponseEntity.ok().body(service.resetNew(userDTO, password));
     }
 }
