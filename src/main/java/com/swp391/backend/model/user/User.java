@@ -53,6 +53,8 @@ public class User implements UserDetails{
     private Role role;
     
     private Date timeout;
+    private Boolean locked = false;
+    private Boolean enabled = false;
     
     @OneToMany(mappedBy = "user")
     @JsonManagedReference
@@ -80,7 +82,7 @@ public class User implements UserDetails{
 
     @Override
     public boolean isAccountNonLocked() {
-        return true;
+        return !locked;
     }
 
     @Override
@@ -90,7 +92,7 @@ public class User implements UserDetails{
 
     @Override
     public boolean isEnabled() {
-        return true;
+        return enabled;
     }
     
     

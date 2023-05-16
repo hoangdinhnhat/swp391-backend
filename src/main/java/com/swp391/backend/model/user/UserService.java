@@ -4,6 +4,8 @@
  */
 package com.swp391.backend.model.user;
 
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -29,6 +31,18 @@ public class UserService implements UserDetailsService {
         return user;
     }
     
+    public UserDetails loadUserByUsername(String username, HttpServletResponse response) throws UsernameNotFoundException {
+        User user = (User) repository.findByEmail(username)
+                .orElse(null);
+        if(user == null || user.getTimeout() == null)
+        {
+            Cookie cookie = new Cookie("Authorization", "");
+            response.addCookie(cookie);
+            return null;
+        }
+        return user;
+    }
+    
     public UserDetails save(User user)
     {
         return repository.save(user);
@@ -37,5 +51,11 @@ public class UserService implements UserDetailsService {
     public boolean isExist(String email)
     {
         return repository.findByEmail(email).isPresent();
+    }
+    
+    public void enableUser(User user)
+    {
+        user.setEnabled(true);
+        repository.save(user);
     }
 }

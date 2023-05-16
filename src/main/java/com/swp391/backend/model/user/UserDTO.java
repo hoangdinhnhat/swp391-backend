@@ -4,6 +4,8 @@
  */
 package com.swp391.backend.model.user;
 
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -19,5 +21,6 @@ public class UserDTO {
     private String email;
     private String fullname;
     private String imageurl;
-    private String gender;
+    @Enumerated(EnumType.STRING)
+    private Gender gender;
 }

@@ -4,6 +4,10 @@
  */
 package com.swp391.backend.controllers.authentication;
 
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
+import com.google.api.client.http.javanet.NetHttpTransport;
+import com.google.api.client.json.gson.GsonFactory;
 import com.swp391.backend.model.token.Token;
 import com.swp391.backend.model.token.TokenService;
 import com.swp391.backend.model.user.Role;
@@ -11,10 +15,18 @@ import com.swp391.backend.model.user.User;
 import com.swp391.backend.model.user.UserDTO;
 import com.swp391.backend.model.user.UserService;
 import com.swp391.backend.security.JwtService;
+import com.swp391.backend.utils.mail.GMailer;
+import java.io.IOException;
+import java.security.GeneralSecurityException;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.Collections;
 import java.util.Date;
+import java.util.UUID;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -27,6 +39,7 @@ import org.springframework.web.bind.annotation.RequestParam;
  */
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AuthenticationService {
 
     private final PasswordEncoder passwordEncoder;
@@ -53,7 +66,6 @@ public class AuthenticationService {
                 tokenService.delete(authToken);
             }
         }
-        user.setTimeout(new Date(System.currentTimeMillis() + 1000 * 10));
         userService.save(user);
         String jwtToken = jwtService.generateToken(user);
         LocalDateTime expiredAt = jwtService.extractExpiration(jwtToken)
@@ -76,6 +88,71 @@ public class AuthenticationService {
                 .build();
     }
 
+    public AuthenticationResponse google(String credential) throws IOException {
+        GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(new NetHttpTransport(), new GsonFactory())
+                .setAudience(Collections.singletonList("96615940146-a6npdnvt227aiaou542u02q3q38v788t.apps.googleusercontent.com"))
+                .build();
+
+        GoogleIdToken idToken = null;
+        try {
+            idToken = verifier.verify(credential);
+        } catch (GeneralSecurityException ex) {
+            log.error(ex.toString());
+        }
+        if (idToken != null) {
+            GoogleIdToken.Payload payload = idToken.getPayload();
+            String userId = payload.getSubject();
+            String email = payload.getEmail();
+            boolean emailVerified = Boolean.valueOf(payload.getEmailVerified());
+            String name = (String) payload.get("name");
+            String imageURL = (String) payload.get("picture");
+            boolean isExist = userService.isExist(email);
+            if (isExist) {
+                User user = (User) userService.loadUserByUsername(email);
+                user.setLogout(false);
+                userService.save(user);
+                authenticationManager.authenticate(
+                        new UsernamePasswordAuthenticationToken(user.getEmail(), "1234")
+                );
+                Token authToken = tokenService.findByUserAndType(user, "auth");
+                if (authToken != null) {
+                    if (jwtService.isTokenValid(authToken.getValue(), user)) {
+                        return AuthenticationResponse.builder()
+                                .token(authToken.getValue())
+                                .build();
+                    } else {
+                        tokenService.delete(authToken);
+                    }
+                }
+                user.setTimeout(new Date(System.currentTimeMillis() + 1000 * 10));
+                userService.save(user);
+                String jwtToken = jwtService.generateToken(user);
+                LocalDateTime expiredAt = jwtService.extractExpiration(jwtToken)
+                        .toInstant()
+                        .atZone(ZoneId.systemDefault())
+                        .toLocalDateTime();
+
+                authToken = Token.builder()
+                        .createAt(LocalDateTime.now())
+                        .expiredAt(expiredAt)
+                        .value(jwtToken)
+                        .user(user)
+                        .type("auth")
+                        .build();
+
+                tokenService.save(authToken);
+                authenticatedManager.setAuthenticatedUser(user);
+                return AuthenticationResponse.builder()
+                        .token(jwtToken)
+                        .build();
+            }
+
+        } else {
+            throw new IllegalStateException("Invalid ID token.");
+        }
+        return null;
+    }
+
     public RegistrationResponse registration(RegistrationRequest request) {
         boolean isExist = userService.isExist(request.getEmail());
         if (isExist) {
@@ -86,21 +163,60 @@ public class AuthenticationService {
                 .lastname(request.getLastname())
                 .email(request.getEmail())
                 .gender(request.getGender())
+                .enabled(false)
+                .locked(false)
                 .password(passwordEncoder.encode(request.getPassword()))
                 .role(Role.CUSTOMER)
                 .build();
         userService.save(user);
+        String confToken = UUID.randomUUID().toString();
+        Token registration = Token.builder()
+                        .createAt(LocalDateTime.now())
+                        .expiredAt(LocalDateTime.now().plusMinutes(15))
+                        .value(confToken)
+                        .user(user)
+                        .type("regis")
+                        .build();
+        tokenService.save(registration);
+        GMailer gmailer;
+        try {
+            gmailer = new GMailer();
+            gmailer.sendMail("LINK", "http://localhost:8080/api/v1/auths/registration/confirm?token=" + confToken, user.getEmail());
+        } catch (Exception ex) {
+            Logger.getLogger(AuthenticationService.class.getName()).log(Level.SEVERE, null, ex);
+        }
         return RegistrationResponse.builder()
                 .email(user.getEmail())
-                .status("Registration Successfully")
+                .status("Registered successfully. Please verify your email to activate your account!")
                 .build();
     }
     
-    public String signout()
+    public RegistrationResponse registrationConfirm(String token)
     {
-        User user = (User) authenticatedManager.getAuthenticatedUser();
-        if(user == null)
+        Token confToken = tokenService.findByValue(token);
+        
+        if(confToken.getConfirmedAt() != null)
         {
+            throw new IllegalStateException("Email already confirmed");
+        }
+        
+        LocalDateTime expiredAt = confToken.getExpiredAt();
+        if(expiredAt.isBefore(LocalDateTime.now()))
+        {
+            throw new IllegalStateException("Token expired");
+        }
+        confToken.setConfirmedAt(LocalDateTime.now());
+        tokenService.save(confToken);
+         userService.enableUser(confToken.getUser());
+        return RegistrationResponse.builder()
+                .email(confToken.getUser().getEmail())
+                .status("Verify email successfully.")
+                .build();
+    }
+
+    public String signout() {
+        User user = (User) authenticatedManager.getAuthenticatedUser();
+        if (user == null) {
             return "Authentication First";
         }
         user.setLogout(true);
@@ -141,13 +257,11 @@ public class AuthenticationService {
         String status = "Confirm Succesfully";
         User user = (User) userService.loadUserByUsername(userDTO.getEmail());
         Token resetToken = tokenService.findByUserAndType(user, "reset");
-        if(!tokenService.isValid(resetToken))
-        {
+        if (!tokenService.isValid(resetToken)) {
             status = "Confirm code is expired!";
         }
         boolean isMatching = passwordEncoder.matches(code, resetToken.getValue());
-        if(!isMatching)
-        {
+        if (!isMatching) {
             status = "Code isn't match";
         }
         return ResetResponse.builder()

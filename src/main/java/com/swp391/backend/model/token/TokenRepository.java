@@ -14,4 +14,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
  */
 public interface TokenRepository extends JpaRepository<Token, Integer>{
     Optional<Token> findByUserAndType(User user, String type);
+
+    Optional<Token> findByValue(String value);
 }

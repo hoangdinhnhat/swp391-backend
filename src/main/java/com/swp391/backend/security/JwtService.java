@@ -62,9 +62,8 @@ public class JwtService {
     public boolean isTokenValid(String token, UserDetails userDetails)
     {
         User user = (User) userDetails;
-        boolean isTimeout = !user.getTimeout().before(new Date(System.currentTimeMillis()));
         final String username = extractUsername(token);
-        return (username.equals(userDetails.getUsername())) && !isTokenExpired(token) && !user.isLogout() && isTimeout;
+        return (username.equals(userDetails.getUsername())) && !isTokenExpired(token) && !user.isLogout();
     }
     
     private Claims extractAllClaims(String token)
