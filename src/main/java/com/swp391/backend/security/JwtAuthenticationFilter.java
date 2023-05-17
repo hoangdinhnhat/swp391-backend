@@ -15,8 +15,6 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Date;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.ResponseCookie;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;

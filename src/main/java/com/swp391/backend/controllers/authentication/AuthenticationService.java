@@ -180,7 +180,7 @@ public class AuthenticationService {
                 .type("regis")
                 .build();
         tokenService.save(registration);
-        String templete = ConfirmCodeTemplete.getTemplete("Bird Trading Platform", "http://localhost:8080/api/v1/auths/registration/confirm?token=" + confToken);
+        String templete = ConfirmCodeTemplete.getTemplete("Bird Trading Platform", user.getFirstname(), "http://localhost:8080/api/v1/auths/registration/confirm?token=" + confToken);
         gmailSender.send("Registration Confirmation", templete, user.getEmail());
         
         return RegistrationResponse.builder()
@@ -231,6 +231,11 @@ public class AuthenticationService {
 
     public ResetResponse resetSend(UserDTO userDTO) throws Exception {
         User user = (User) userService.loadUserByUsername(userDTO.getEmail());
+        Token checkToken = tokenService.findByUserAndType(user, "reset");
+        if(checkToken != null)
+        {
+            tokenService.delete(checkToken);
+        }
         String forgetCode = Math.round((Math.random() * 899999 + 100000)) + "";
         System.out.println("Forget Code: " + forgetCode);
         String token = passwordEncoder.encode(forgetCode);
@@ -242,7 +247,7 @@ public class AuthenticationService {
                 .type("reset")
                 .build();
         tokenService.save(resetToken);
-        String templete = ForgetCodeTemplete.getTemplete("Bird Trading Platform", forgetCode);
+        String templete = ForgetCodeTemplete.getTemplete("Bird Trading Platform", user.getFirstname() ,forgetCode);
         gmailSender.send("Forget Password Confirmation", templete, user.getEmail());
         return ResetResponse.builder()
                 .email(user.getEmail())
@@ -256,10 +261,12 @@ public class AuthenticationService {
         Token resetToken = tokenService.findByUserAndType(user, "reset");
         if (!tokenService.isValid(resetToken)) {
             status = "Confirm code is expired!";
+            throw new IllegalStateException(status);
         }
         boolean isMatching = passwordEncoder.matches(code, resetToken.getValue());
         if (!isMatching) {
             status = "Code isn't match";
+            throw new IllegalStateException(status);
         }
         return ResetResponse.builder()
                 .email(user.getEmail())
