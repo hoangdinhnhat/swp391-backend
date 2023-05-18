@@ -180,7 +180,7 @@ public class AuthenticationService {
                 .type("regis")
                 .build();
         tokenService.save(registration);
-        String templete = ConfirmCodeTemplete.getTemplete("Bird Trading Platform", user.getFirstname(), "http://localhost:8080/api/v1/auths/registration/confirm?token=" + confToken);
+        String templete = ConfirmCodeTemplete.getTemplete("Bird Trading Platform", user.getFirstname(), "http://localhost:3030/confirm?token=" + confToken);
         gmailSender.send("Registration Confirmation", templete, user.getEmail());
         
         return RegistrationResponse.builder()
