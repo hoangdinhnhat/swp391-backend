@@ -64,10 +64,8 @@ public class AuthenticationController {
     }
     
     @GetMapping("/registration/confirm")
-    public RedirectView registrationConfirm(@RequestParam("token") String token, RedirectAttributes attributes) {
-        ResponseEntity.ok().body(service.registrationConfirm(token));
-        attributes.addFlashAttribute("flashAttribute", "redirectWithRedirectView");
-        return new RedirectView("http://localhost:3000/login");
+    public ResponseEntity<RegistrationResponse> registrationConfirm(@RequestParam("token") String token, RedirectAttributes attributes) {
+        return ResponseEntity.ok().body(service.registrationConfirm(token));
     }
 
     @PostMapping("/signout")
