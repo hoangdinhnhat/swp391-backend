@@ -54,8 +54,21 @@ public class AuthenticationController {
     }
 
     @PostMapping("/google")
-    public ResponseEntity<AuthenticationResponse> google(@RequestParam("credential") String credential) throws IOException {
-        return ResponseEntity.ok().body(service.google(credential));
+    public ResponseEntity<AuthenticationResponse> google(
+            @RequestBody GoogleRequest request, 
+            HttpServletResponse response
+    )
+    {
+        AuthenticationResponse authRes = service.google(request);
+        final ResponseCookie responseCookie = ResponseCookie
+                .from("Authorization", "Bearer_" + authRes.getToken())
+                .httpOnly(true)
+                .path("/")
+                .maxAge(1800)
+                .sameSite("Lax")
+                .build();
+        response.addHeader(HttpHeaders.SET_COOKIE, responseCookie.toString());
+        return ResponseEntity.ok().body(authRes);
     }
 
     @PostMapping("/registration")

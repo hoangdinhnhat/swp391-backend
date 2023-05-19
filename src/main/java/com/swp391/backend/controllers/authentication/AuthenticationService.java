@@ -29,7 +29,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.RequestParam;
 
@@ -90,69 +92,61 @@ public class AuthenticationService {
                 .build();
     }
 
-    public AuthenticationResponse google(String credential) throws IOException {
-        GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(new NetHttpTransport(), new GsonFactory())
-                .setAudience(Collections.singletonList("96615940146-a6npdnvt227aiaou542u02q3q38v788t.apps.googleusercontent.com"))
+    public AuthenticationResponse google(GoogleRequest request) {
+        String email = request.getEmail();
+        User user = (User) userService.loadUserByUsername(email, "google");
+        Token authToken;
+        if (user != null) {
+            user.setLogout(false);
+            userService.save(user);
+
+            authToken = tokenService.findByUserAndType(user, "auth");
+            if (authToken != null) {
+                if (jwtService.isTokenValid(authToken.getValue(), user)) {
+                    return AuthenticationResponse.builder()
+                            .token(authToken.getValue())
+                            .build();
+                } else {
+                    tokenService.delete(authToken);
+                }
+            }
+        } else {
+            user = User.builder()
+                    .firstname(request.getGiven_name())
+                    .lastname(request.getFamily_name())
+                    .email(request.getEmail())
+                    .gender(null)
+                    .imageurl(request.getPicture())
+                    .enabled(true)
+                    .locked(false)
+                    .password(null)
+                    .role(Role.CUSTOMER)
+                    .build();
+        }
+        UsernamePasswordAuthenticationToken usernameToken = new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
+        SecurityContextHolder.getContext().setAuthentication(usernameToken);
+
+        user.setTimeout(new Date(System.currentTimeMillis() + 1000 * 60 * 30));
+        userService.save(user);
+        String jwtToken = jwtService.generateToken(user);
+        LocalDateTime expiredAt = jwtService.extractExpiration(jwtToken)
+                .toInstant()
+                .atZone(ZoneId.systemDefault())
+                .toLocalDateTime();
+
+        authToken = Token.builder()
+                .createAt(LocalDateTime.now())
+                .expiredAt(expiredAt)
+                .value(jwtToken)
+                .user(user)
+                .type("auth")
                 .build();
 
-        GoogleIdToken idToken = null;
-        try {
-            idToken = verifier.verify(credential);
-        } catch (GeneralSecurityException ex) {
-            log.error(ex.toString());
-        }
-        if (idToken != null) {
-            GoogleIdToken.Payload payload = idToken.getPayload();
-            String userId = payload.getSubject();
-            String email = payload.getEmail();
-            boolean emailVerified = Boolean.valueOf(payload.getEmailVerified());
-            String name = (String) payload.get("name");
-            String imageURL = (String) payload.get("picture");
-            boolean isExist = userService.isExist(email);
-            if (isExist) {
-                User user = (User) userService.loadUserByUsername(email);
-                user.setLogout(false);
-                userService.save(user);
-                authenticationManager.authenticate(
-                        new UsernamePasswordAuthenticationToken(user.getEmail(), "1234")
-                );
-                Token authToken = tokenService.findByUserAndType(user, "auth");
-                if (authToken != null) {
-                    if (jwtService.isTokenValid(authToken.getValue(), user)) {
-                        return AuthenticationResponse.builder()
-                                .token(authToken.getValue())
-                                .build();
-                    } else {
-                        tokenService.delete(authToken);
-                    }
-                }
-                user.setTimeout(new Date(System.currentTimeMillis() + 1000 * 10));
-                userService.save(user);
-                String jwtToken = jwtService.generateToken(user);
-                LocalDateTime expiredAt = jwtService.extractExpiration(jwtToken)
-                        .toInstant()
-                        .atZone(ZoneId.systemDefault())
-                        .toLocalDateTime();
-
-                authToken = Token.builder()
-                        .createAt(LocalDateTime.now())
-                        .expiredAt(expiredAt)
-                        .value(jwtToken)
-                        .user(user)
-                        .type("auth")
-                        .build();
-
-                tokenService.save(authToken);
-                authenticatedManager.setAuthenticatedUser(user);
-                return AuthenticationResponse.builder()
-                        .token(jwtToken)
-                        .build();
-            }
-
-        } else {
-            throw new IllegalStateException("Invalid ID token.");
-        }
-        return null;
+        tokenService.save(authToken);
+        authenticatedManager.setAuthenticatedUser(user);
+        return AuthenticationResponse.builder()
+                .token(jwtToken)
+                .build();
     }
 
     public RegistrationResponse registration(RegistrationRequest request) throws Exception {
@@ -180,9 +174,9 @@ public class AuthenticationService {
                 .type("regis")
                 .build();
         tokenService.save(registration);
-        String templete = ConfirmCodeTemplete.getTemplete("Bird Trading Platform", user.getFirstname(), "http://localhost:3030/confirm?token=" + confToken);
+        String templete = ConfirmCodeTemplete.getTemplete("Bird Trading Platform", user.getFirstname(), "http://localhost:3000/confirm?token=" + confToken);
         gmailSender.send("Registration Confirmation", templete, user.getEmail());
-        
+
         return RegistrationResponse.builder()
                 .email(user.getEmail())
                 .status("Registered successfully. Please verify your email to activate your account!")
@@ -232,8 +226,7 @@ public class AuthenticationService {
     public ResetResponse resetSend(UserDTO userDTO) throws Exception {
         User user = (User) userService.loadUserByUsername(userDTO.getEmail());
         Token checkToken = tokenService.findByUserAndType(user, "reset");
-        if(checkToken != null)
-        {
+        if (checkToken != null) {
             tokenService.delete(checkToken);
         }
         String forgetCode = Math.round((Math.random() * 899999 + 100000)) + "";
@@ -247,7 +240,7 @@ public class AuthenticationService {
                 .type("reset")
                 .build();
         tokenService.save(resetToken);
-        String templete = ForgetCodeTemplete.getTemplete("Bird Trading Platform", user.getFirstname() ,forgetCode);
+        String templete = ForgetCodeTemplete.getTemplete("Bird Trading Platform", user.getFirstname(), forgetCode);
         gmailSender.send("Forget Password Confirmation", templete, user.getEmail());
         return ResetResponse.builder()
                 .email(user.getEmail())
@@ -273,7 +266,7 @@ public class AuthenticationService {
                 .status(status)
                 .build();
     }
-    
+
     public ResetResponse resetNew(UserDTO userDTO, String newPass) {
         String status = "Reset Password Succesfully";
         User user = (User) userService.loadUserByUsername(userDTO.getEmail());

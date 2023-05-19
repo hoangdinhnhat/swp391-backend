@@ -4,8 +4,7 @@
  */
 package com.swp391.backend.model.user;
 
-import jakarta.servlet.http.Cookie;
-import jakarta.servlet.http.HttpServletResponse;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -34,7 +33,7 @@ public class UserService implements UserDetailsService {
     public UserDetails loadUserByUsername(String username, String filter) throws UsernameNotFoundException {
         User user = (User) repository.findByEmail(username)
                 .orElse(null);
-        if(user == null || user.getTimeout() == null)
+        if(user == null)
         {
             return null;
         }

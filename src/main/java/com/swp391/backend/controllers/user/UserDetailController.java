@@ -11,6 +11,7 @@ import com.swp391.backend.model.user.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -42,5 +43,17 @@ public class UserDetailController {
                 .gender(user.getGender())
                 .build();
         return ResponseEntity.ok().body(userDTO);
+    }
+    
+    @PostMapping("/upload/avatar")
+    public ResponseEntity<String> sss() {
+        User user = (User) authenticatedManager.getAuthenticatedUser();
+        UserDTO userDTO = UserDTO.builder()
+                .email(user.getEmail())
+                .fullname(user.getFirstname() + " " + user.getLastname())
+                .imageurl(user.getImageurl())
+                .gender(user.getGender())
+                .build();
+        return ResponseEntity.ok().body("");
     }
 }

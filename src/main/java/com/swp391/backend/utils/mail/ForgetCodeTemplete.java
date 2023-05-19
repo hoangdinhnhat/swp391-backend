@@ -363,7 +363,7 @@ public class ForgetCodeTemplete {
                 + "                              To reset your password, please enter the following\n"
                 + "                              code on the password reset page:\n"
                 + "                            </p>\n"
-                + "                            <p>This code will expire in <b>15 minutes</b>.</p>\n"
+                + "                            <p>This code will expire in <b>60 seconds</b>.</p>\n"
                 + "                          </div>\n"
                 + "                        </td>\n"
                 + "                      </tr>\n"
