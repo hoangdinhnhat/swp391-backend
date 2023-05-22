@@ -4,8 +4,10 @@
  */
 package com.swp391.backend.exception;
 
+import com.swp391.backend.model.user.UserService;
 import jakarta.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.AuthenticationException;
@@ -24,11 +26,12 @@ public class ExceptionHandlers extends DefaultHandlerExceptionResolver{
     @ExceptionHandler(value = AuthenticationException.class)
     public ResponseEntity<ApiError> handleException(AuthenticationException e, HttpServletRequest request)
     {
+        String message = e.getMessage().equals("Bad credentials") ? "Password is incorrect" : e.getMessage();
         ApiError apiError = ApiError
                 .builder()
                 .path(request.getRequestURI())
-                .exceptionMessage(e.getMessage())
-                .message("Username or password is incorrect!")
+                .exceptionMessage(message)
+                .message(message)
                 .statusCode(HttpStatus.NOT_FOUND.value())
                 .localDateTime(LocalDateTime.now())
                 .build();

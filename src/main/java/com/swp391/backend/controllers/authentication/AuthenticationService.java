@@ -4,10 +4,6 @@
  */
 package com.swp391.backend.controllers.authentication;
 
-import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
-import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
-import com.google.api.client.http.javanet.NetHttpTransport;
-import com.google.api.client.json.gson.GsonFactory;
 import com.swp391.backend.model.token.Token;
 import com.swp391.backend.model.token.TokenService;
 import com.swp391.backend.model.user.Role;
@@ -18,20 +14,21 @@ import com.swp391.backend.security.JwtService;
 import com.swp391.backend.utils.mail.ConfirmCodeTemplete;
 import com.swp391.backend.utils.mail.EmailSender;
 import com.swp391.backend.utils.mail.ForgetCodeTemplete;
-import java.io.IOException;
-import java.security.GeneralSecurityException;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.util.Collections;
 import java.util.Date;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.RequestParam;
 
@@ -49,13 +46,28 @@ public class AuthenticationService {
     private final AuthenticationManager authenticationManager;
     private final UserService userService;
     private final TokenService tokenService;
-    private final AuthenticatedManager authenticatedManager;
     private final EmailSender gmailSender;
+    private final AuthenticatedManager authenticatedManager;
 
     public AuthenticationResponse authentication(AuthenticationRequest request) {
+        if (authenticatedManager.getAuthenticatedUser() != null) {
+            throw new IllegalStateException("Please log out of the currently logged in account first!");
+        }
         User user = (User) userService.loadUserByUsername(request.getEmail());
         user.setLogout(false);
         userService.save(user);
+        boolean isMatch = passwordEncoder.matches(request.getPassword(), user.getPassword());
+        if (!isMatch) {
+            user.setWrongpasswordcounter(user.getWrongpasswordcounter() + 1);
+            int counter = user.getWrongpasswordcounter();
+            userService.save(user);
+            if (counter == 3) {
+                throw new IllegalStateException("You have entered the wrong password 3 times in a row. If you enter incorrectly more than 5 times in a row, your account will be temporarily locked!");
+            } else if (counter == 6) {
+                disableAccount(user);
+                throw new IllegalStateException("Your account has been temporarily locked. We have sent a confirmation message to your email. Please check your email to confirm your account is still safe.");
+            }
+        }
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
         );
@@ -86,10 +98,15 @@ public class AuthenticationService {
                 .build();
 
         tokenService.save(authToken);
-        authenticatedManager.setAuthenticatedUser(user);
         return AuthenticationResponse.builder()
                 .token(jwtToken)
                 .build();
+    }
+    
+    private void disableAccount(User user)
+    {
+        user.setEnabled(false);
+        userService.save(user);
     }
 
     public AuthenticationResponse google(GoogleRequest request) {
@@ -143,7 +160,6 @@ public class AuthenticationService {
                 .build();
 
         tokenService.save(authToken);
-        authenticatedManager.setAuthenticatedUser(user);
         return AuthenticationResponse.builder()
                 .token(jwtToken)
                 .build();
@@ -161,6 +177,7 @@ public class AuthenticationService {
                 .gender(request.getGender())
                 .enabled(false)
                 .locked(false)
+                .imageurl("/api/v1/users/info/avatar")
                 .password(passwordEncoder.encode(request.getPassword()))
                 .role(Role.CUSTOMER)
                 .build();
@@ -186,6 +203,10 @@ public class AuthenticationService {
     public RegistrationResponse registrationConfirm(String token) {
         Token confToken = tokenService.findByValue(token);
 
+        if (confToken == null) {
+            throw new IllegalStateException("Token not found!");
+        }
+
         if (confToken.getConfirmedAt() != null) {
             throw new IllegalStateException("Email already confirmed");
         }
@@ -203,6 +224,39 @@ public class AuthenticationService {
                 .build();
     }
 
+    public RegistrationResponse registrationResend(String oldToken) throws Exception {
+        Token confToken = tokenService.findByValue(oldToken);
+
+        if (confToken == null) {
+            throw new IllegalStateException("Token not found!");
+        }
+
+        if (confToken.getConfirmedAt() != null) {
+            throw new IllegalStateException("Email already confirmed");
+        }
+
+        tokenService.delete(confToken);
+
+        User user = confToken.getUser();
+        String randomToken = UUID.randomUUID().toString();
+        Token registration = Token.builder()
+                .createAt(LocalDateTime.now())
+                .expiredAt(LocalDateTime.now().plusMinutes(15))
+                .value(randomToken)
+                .user(user)
+                .type("regis")
+                .build();
+        tokenService.save(registration);
+
+        String templete = ConfirmCodeTemplete.getTemplete("Bird Trading Platform", user.getFirstname(), "http://localhost:3000/confirm?token=" + confToken);
+        gmailSender.send("Registration Confirmation", templete, user.getEmail());
+
+        return RegistrationResponse.builder()
+                .email(user.getEmail())
+                .status("Resend email succesfully. Please verify your email to activate your account!")
+                .build();
+    }
+
     public String signout() {
         User user = (User) authenticatedManager.getAuthenticatedUser();
         if (user == null) {
@@ -210,7 +264,6 @@ public class AuthenticationService {
         }
         user.setLogout(true);
         userService.save(user);
-        authenticatedManager.setAuthenticatedUser(null);
         return "Logout Successfully!";
     }
 
@@ -218,7 +271,8 @@ public class AuthenticationService {
         User user = (User) userService.loadUserByUsername(email);
         return UserDTO.builder()
                 .email(user.getEmail())
-                .fullname(user.getFirstname() + " " + user.getLastname())
+                .firstname(user.getFirstname())
+                .lastname(user.getLastname())
                 .imageurl(user.getImageurl())
                 .build();
     }

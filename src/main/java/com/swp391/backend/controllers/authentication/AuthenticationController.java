@@ -6,28 +6,26 @@ package com.swp391.backend.controllers.authentication;
 
 import com.swp391.backend.model.user.User;
 import com.swp391.backend.model.user.UserDTO;
-import com.swp391.backend.utils.storage.StorageService;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.nio.file.Path;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.web.authentication.WebAuthenticationDetails;
+import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-import org.springframework.web.servlet.view.RedirectView;
 
 /**
  *
@@ -84,11 +82,14 @@ public class AuthenticationController {
     public ResponseEntity<RegistrationResponse> registrationConfirm(@RequestParam("token") String token, RedirectAttributes attributes) {
         return ResponseEntity.ok().body(service.registrationConfirm(token));
     }
+    
+    @GetMapping("/registration/resend")
+    public ResponseEntity<RegistrationResponse> registrationResend(@RequestParam("token") String oldToken) throws Exception {
+        return ResponseEntity.ok().body(service.registrationResend(oldToken));
+    }
 
     @PostMapping("/signout")
     public ResponseEntity<String> signout(HttpServletRequest request, HttpServletResponse response) {
-        Cookie cookie = new Cookie("Authorization", "");
-        response.addCookie(cookie);
         return ResponseEntity.ok().body(service.signout());
     }
 

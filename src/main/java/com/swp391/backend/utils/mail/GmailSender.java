@@ -68,7 +68,7 @@ public class GmailSender implements EmailSender{
         email.addRecipient(javax.mail.Message.RecipientType.TO,
                 new InternetAddress(targetEmail));
         email.setSubject(subject);
-        email.setContent(message, "text/html");
+        email.setContent(message, "text/html;charset=utf-8");
 
         ByteArrayOutputStream buffer = new ByteArrayOutputStream();
         email.writeTo(buffer);

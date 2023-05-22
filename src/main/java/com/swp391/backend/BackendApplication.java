@@ -16,12 +16,12 @@ public class BackendApplication {
         SpringApplication.run(BackendApplication.class, args);
     }
 
-    @Bean
-    CommandLineRunner init(StorageService storageService) {
-        return (args) -> {
-            storageService.deleteAll();
-            storageService.init();
-        };
-    }
+//    @Bean
+//    CommandLineRunner init(StorageService storageService) {
+//        return (args) -> {
+//            storageService.deleteAll();
+//            storageService.init();
+//        };
+//    }
 
 }

@@ -4,6 +4,12 @@
  */
 package com.swp391.backend.controllers.authentication;
 
+import com.swp391.backend.model.user.User;
+import com.swp391.backend.model.user.UserService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
@@ -12,16 +18,16 @@ import org.springframework.stereotype.Service;
  * @author Lenovo
  */
 @Service
+@RequiredArgsConstructor
 public class AuthenticatedManager {
-    private UserDetails AUTHENTICATED_USER;
+    
+    private final UserService userService;
     
     public UserDetails getAuthenticatedUser()
     {
-        return AUTHENTICATED_USER;
-    }
-    
-    public void setAuthenticatedUser(UserDetails user)
-    {
-        AUTHENTICATED_USER = user;
+        SecurityContext context = SecurityContextHolder.getContext();
+        Authentication authentication = context.getAuthentication();
+        String email = authentication.getName();
+        return userService.loadUserByUsername(email, "filter");
     }
 }

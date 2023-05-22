@@ -5,6 +5,7 @@
 package com.swp391.backend.model.user;
 
 import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.swp391.backend.model.receiveinfo.ReceiveInfo;
 import com.swp391.backend.model.token.Token;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -59,6 +60,12 @@ public class User implements UserDetails{
     @OneToMany(mappedBy = "user")
     @JsonManagedReference
     private Collection<Token> tokens;
+    
+    @OneToMany(mappedBy = "user")
+    @JsonManagedReference
+    private Collection<ReceiveInfo> receiveinfos;
+    
+    private int wrongpasswordcounter = 0;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
