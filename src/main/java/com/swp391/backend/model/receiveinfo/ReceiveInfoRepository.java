@@ -17,4 +17,5 @@ import org.springframework.data.repository.PagingAndSortingRepository;
 public interface ReceiveInfoRepository extends PagingAndSortingRepository<ReceiveInfo, Integer>, JpaRepository<ReceiveInfo, Integer>{
     
     List<ReceiveInfo> findByUser(User user, Pageable pageable);
+    List<ReceiveInfo> findByUser(User user);
 }

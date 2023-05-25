@@ -26,4 +26,5 @@ public class UserDTO {
     private String imageurl;
     @Enumerated(EnumType.STRING)
     private Gender gender;
+    private int receiveInfoPage;
 }

@@ -14,8 +14,10 @@ import com.swp391.backend.security.JwtService;
 import com.swp391.backend.utils.mail.ConfirmCodeTemplete;
 import com.swp391.backend.utils.mail.EmailSender;
 import com.swp391.backend.utils.mail.ForgetCodeTemplete;
+import com.swp391.backend.utils.mail.SecurityConfirmTemplete;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.Date;
@@ -24,9 +26,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -49,7 +48,7 @@ public class AuthenticationService {
     private final EmailSender gmailSender;
     private final AuthenticatedManager authenticatedManager;
 
-    public AuthenticationResponse authentication(AuthenticationRequest request) {
+    public AuthenticationResponse authentication(AuthenticationRequest request) throws Exception {
         if (authenticatedManager.getAuthenticatedUser() != null) {
             throw new IllegalStateException("Please log out of the currently logged in account first!");
         }
@@ -64,13 +63,14 @@ public class AuthenticationService {
             if (counter == 3) {
                 throw new IllegalStateException("You have entered the wrong password 3 times in a row. If you enter incorrectly more than 5 times in a row, your account will be temporarily locked!");
             } else if (counter == 6) {
-                disableAccount(user);
+                disableAccountAndSendMail(user);
                 throw new IllegalStateException("Your account has been temporarily locked. We have sent a confirmation message to your email. Please check your email to confirm your account is still safe.");
             }
         }
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
         );
+        user.setWrongpasswordcounter(0);
         Token authToken = tokenService.findByUserAndType(user, "auth");
         if (authToken != null) {
             if (jwtService.isTokenValid(authToken.getValue(), user)) {
@@ -102,10 +102,24 @@ public class AuthenticationService {
                 .token(jwtToken)
                 .build();
     }
-    
-    private void disableAccount(User user)
-    {
+
+    private void disableAccountAndSendMail(User user) throws Exception {
         user.setEnabled(false);
+        Token authToken = tokenService.findByUserAndType(user, "security");
+        if (authToken != null) {
+            tokenService.delete(authToken);
+        }
+        String confToken = UUID.randomUUID().toString();
+        Token registration = Token.builder()
+                .createAt(LocalDateTime.now())
+                .expiredAt(LocalDateTime.now().plusMinutes(15))
+                .value(confToken)
+                .user(user)
+                .type("security")
+                .build();
+        tokenService.save(registration);
+        String templete = SecurityConfirmTemplete.getTemplete("Bird Trading Platform", user.getFirstname(), "http://localhost:3000/confirm?token=" + confToken);
+        gmailSender.send("Secure Confirmation", templete, user.getEmail());
         userService.save(user);
     }
 
@@ -200,7 +214,7 @@ public class AuthenticationService {
                 .build();
     }
 
-    public RegistrationResponse registrationConfirm(String token) {
+    public RegistrationResponse emailConfirm(String token) {
         Token confToken = tokenService.findByValue(token);
 
         if (confToken == null) {
@@ -208,7 +222,7 @@ public class AuthenticationService {
         }
 
         if (confToken.getConfirmedAt() != null) {
-            throw new IllegalStateException("Email already confirmed");
+            throw new IllegalStateException("You're already confirmed");
         }
 
         LocalDateTime expiredAt = confToken.getExpiredAt();
@@ -224,7 +238,7 @@ public class AuthenticationService {
                 .build();
     }
 
-    public RegistrationResponse registrationResend(String oldToken) throws Exception {
+    public RegistrationResponse emailResend(String oldToken) throws Exception {
         Token confToken = tokenService.findByValue(oldToken);
 
         if (confToken == null) {
@@ -234,10 +248,16 @@ public class AuthenticationService {
         if (confToken.getConfirmedAt() != null) {
             throw new IllegalStateException("Email already confirmed");
         }
+        
+        if(confToken.getExpiredAt().isAfter(LocalDateTime.now()))
+        {
+            throw new IllegalStateException("The email was sent within minutes. Please double-check your email.");
+        }
+
+        User user = confToken.getUser();
 
         tokenService.delete(confToken);
 
-        User user = confToken.getUser();
         String randomToken = UUID.randomUUID().toString();
         Token registration = Token.builder()
                 .createAt(LocalDateTime.now())
@@ -248,7 +268,7 @@ public class AuthenticationService {
                 .build();
         tokenService.save(registration);
 
-        String templete = ConfirmCodeTemplete.getTemplete("Bird Trading Platform", user.getFirstname(), "http://localhost:3000/confirm?token=" + confToken);
+        String templete = ConfirmCodeTemplete.getTemplete("Bird Trading Platform", user.getFirstname(), "http://localhost:3000/confirm?token=" + randomToken);
         gmailSender.send("Registration Confirmation", templete, user.getEmail());
 
         return RegistrationResponse.builder()

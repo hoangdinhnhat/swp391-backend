@@ -13,6 +13,7 @@ import com.swp391.backend.model.user.UserService;
 import com.swp391.backend.utils.storage.StorageService;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
@@ -21,6 +22,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -51,12 +53,14 @@ public class UserDetailController {
     @GetMapping("/info")
     public ResponseEntity<UserDTO> loginUserInfo() {
         User user = (User) authenticatedManager.getAuthenticatedUser();
+        int page = receiveInfoService.getMaxPage(user);
         UserDTO userDTO = UserDTO.builder()
                 .email(user.getEmail())
                 .firstname(user.getFirstname())
                 .lastname(user.getLastname())
                 .imageurl(user.getImageurl())
                 .gender(user.getGender())
+                .receiveInfoPage(page)
                 .build();
         return ResponseEntity.ok().body(userDTO);
     }
@@ -90,6 +94,8 @@ public class UserDetailController {
     @PostMapping("/info/avatar")
     public ResponseEntity<String> uploadAvatar(@RequestParam("file") MultipartFile file) {
         User user = (User) authenticatedManager.getAuthenticatedUser();
+        user.setImageurl("/api/v1/users/info/avatar");
+        userService.save(user);
         storageService.store(file, user.getId() + ".avatar");
         return ResponseEntity.ok("Ok");
     }
@@ -105,15 +111,14 @@ public class UserDetailController {
         return ResponseEntity.ok().headers(header).body(file);
     }
 
-    @PostMapping("/info/address")
+    @PostMapping("/info/receives")
     public ResponseEntity<ReceiveInfo> addReceiveInfo(@RequestBody ReceiveInfoRequest request) {
         User user = (User) authenticatedManager.getAuthenticatedUser();
         boolean defaultInfo = request.is_default();
-        if (receiveInfoService.getReceiveInfo(user, 0).size() == 1) {
+        if (receiveInfoService.getReceiveInfo(user, 0).size() == 0) {
             defaultInfo = true;
         }
-       
-        
+
         var receiveInfo = ReceiveInfo.builder()
                 .fullname(request.getFullname())
                 .phone(request.getPhone())
@@ -126,11 +131,33 @@ public class UserDetailController {
                 .build();
         return ResponseEntity.ok().body(receiveInfoService.saveReceiveInfo(receiveInfo));
     }
-    
-    @GetMapping("/info/address")
+
+    @GetMapping("/info/receives")
     public ResponseEntity<List<ReceiveInfo>> getReceiveInfo(@RequestParam("page") Integer pageNum) {
         pageNum--;
         User user = (User) authenticatedManager.getAuthenticatedUser();
         return ResponseEntity.ok().body(receiveInfoService.getReceiveInfo(user, pageNum));
+    }
+
+    @GetMapping("/info/receives/default/{receive_id}")
+    public ResponseEntity<ReceiveInfo> setReceiveInfoDefault(@PathVariable("receive_id") Integer id) {
+        User user = (User) authenticatedManager.getAuthenticatedUser();
+        ReceiveInfo info = receiveInfoService.getReceiveInfo(id);
+        info.set_default(true);
+        List<ReceiveInfo> infos = receiveInfoService.getReceiveInfo(user).stream()
+                .filter(r -> r.getId() != id)
+                .map(r -> {
+                    r.set_default(false);
+                    return r;
+                }).collect(Collectors.toList());
+        receiveInfoService.saveReceiveInfo(info);
+        receiveInfoService.saveReceiveInfos(infos);
+        return ResponseEntity.ok().body(info);
+    }
+    
+    @GetMapping("/info/receives/delete/{delete_id}")
+    public ResponseEntity<String> deleteReceiveInfo(@PathVariable("delete_id") Integer id) {
+        receiveInfoService.deleteReceiveInfo(id);
+        return ResponseEntity.ok().build();
     }
 }

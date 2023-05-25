@@ -17,6 +17,7 @@ import lombok.NoArgsConstructor;
 @Data
 @Builder
 @AllArgsConstructor
+@NoArgsConstructor
 public class RegistrationResponse {
     private String email;
     private String status;

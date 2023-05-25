@@ -12,6 +12,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  *
@@ -25,12 +26,41 @@ public class ReceiveInfoService {
     
     public List<ReceiveInfo> getReceiveInfo(User user, Integer page)
     {
-        Pageable pageable = PageRequest.of(page, 3, Sort.by("id").ascending());
+        Pageable pageable = PageRequest.of(page, 3, Sort.by("_default").descending().and(Sort.by("id").ascending()));
         return receiveInfoRepository.findByUser(user, pageable);
+    }
+    
+    public List<ReceiveInfo> getReceiveInfo(User user)
+    {
+        return receiveInfoRepository.findByUser(user);
     }
     
     public ReceiveInfo saveReceiveInfo(ReceiveInfo receiveInfo)
     {
         return receiveInfoRepository.save(receiveInfo);
+    }
+    
+    public List<ReceiveInfo> saveReceiveInfos(List<ReceiveInfo> infos)
+    {
+        return receiveInfoRepository.saveAll(infos);
+    }
+    
+    public int getMaxPage(User user)
+    {
+        List<ReceiveInfo> list = receiveInfoRepository.findByUser(user);
+        int length = list.size();
+        int page = Math.floorDiv(length, 3) + 1;
+        return page;
+    }
+    
+    public ReceiveInfo getReceiveInfo(int id)
+    {
+        ReceiveInfo receiveInfo = receiveInfoRepository.findById(id).orElse(null);
+        return receiveInfo;
+    }
+    
+    public void deleteReceiveInfo(int id)
+    {
+        receiveInfoRepository.deleteById(id);
     }
 }

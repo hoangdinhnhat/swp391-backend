@@ -4,9 +4,7 @@
  */
 package com.swp391.backend.controllers.authentication;
 
-import com.swp391.backend.model.user.User;
 import com.swp391.backend.model.user.UserDTO;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -14,11 +12,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContext;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.web.authentication.WebAuthenticationDetails;
-import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -43,7 +36,7 @@ public class AuthenticationController {
     public ResponseEntity<AuthenticationResponse> authentication(
             @RequestBody AuthenticationRequest request,
             HttpServletResponse response
-    ) {
+    ) throws Exception {
         AuthenticationResponse authRes = service.authentication(request);
         final ResponseCookie responseCookie = ResponseCookie
                 .from("Authorization", "Bearer_" + authRes.getToken())
@@ -80,16 +73,24 @@ public class AuthenticationController {
 
     @GetMapping("/registration/confirm")
     public ResponseEntity<RegistrationResponse> registrationConfirm(@RequestParam("token") String token, RedirectAttributes attributes) {
-        return ResponseEntity.ok().body(service.registrationConfirm(token));
+        return ResponseEntity.ok().body(service.emailConfirm(token));
     }
     
     @GetMapping("/registration/resend")
     public ResponseEntity<RegistrationResponse> registrationResend(@RequestParam("token") String oldToken) throws Exception {
-        return ResponseEntity.ok().body(service.registrationResend(oldToken));
+        return ResponseEntity.ok().body(service.emailResend(oldToken));
     }
 
     @PostMapping("/signout")
     public ResponseEntity<String> signout(HttpServletRequest request, HttpServletResponse response) {
+        final ResponseCookie responseCookie = ResponseCookie
+                .from("Authorization", "")
+                .httpOnly(true)
+                .path("/")
+                .maxAge(0)
+                .sameSite("Lax")
+                .build();
+        response.addHeader(HttpHeaders.SET_COOKIE, responseCookie.toString());
         return ResponseEntity.ok().body(service.signout());
     }
 
