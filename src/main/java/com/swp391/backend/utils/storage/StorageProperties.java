@@ -8,14 +8,18 @@ public class StorageProperties {
 	/**
 	 * Folder location for storing files
 	 */
-	private String location = "avatar";
+	private String avatarLocation = "avatars";
+	private String productImageLocation = "products/image";
+	private String productVideoLocation = "products/video";
+	private String productFeedbackImageLocation = "products/feedbacks/image";
+	private String productFeedbackVideoLocation = "products/feedbacks/video";
 
-	public String getLocation() {
-		return location;
+	public String getAvatarLocation() {
+		return avatarLocation;
 	}
-
-	public void setLocation(String location) {
-		this.location = location;
-	}
+	public String getProductImageLocation() { return productImageLocation;}
+	public String getProductVideoLocation() { return productVideoLocation;}
+	public String getProductFeedbackImageLocation() { return productFeedbackImageLocation;}
+	public String getProductFeedbackVideoLocation() { return productFeedbackVideoLocation;}
 
 }

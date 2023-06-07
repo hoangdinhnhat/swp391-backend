@@ -4,6 +4,7 @@
  */
 package com.swp391.backend.model.user;
 
+import com.swp391.backend.model.cartProduct.CartProduct;
 import com.swp391.backend.model.receiveinfo.ReceiveInfo;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -27,4 +28,5 @@ public class UserDTO {
     @Enumerated(EnumType.STRING)
     private Gender gender;
     private int receiveInfoPage;
+    private List<CartProduct> cartProducts;
 }

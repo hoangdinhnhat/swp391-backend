@@ -4,24 +4,19 @@
  */
 package com.swp391.backend.model.user;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.swp391.backend.model.cart.Cart;
+import com.swp391.backend.model.productFeedback.Feedback;
 import com.swp391.backend.model.receiveinfo.ReceiveInfo;
 import com.swp391.backend.model.token.Token;
-import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.Id;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
+
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NoArgsConstructor;
+
+import lombok.*;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -30,7 +25,8 @@ import org.springframework.security.core.userdetails.UserDetails;
  *
  * @author Lenovo
  */
-@Data
+@Getter
+@Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
@@ -64,6 +60,14 @@ public class User implements UserDetails{
     @OneToMany(mappedBy = "user")
     @JsonManagedReference
     private Collection<ReceiveInfo> receiveinfos;
+
+    @OneToMany(mappedBy = "user")
+    @JsonManagedReference
+    private Collection<Feedback> feedbacks;
+
+    @OneToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "cart_id", referencedColumnName = "id")
+    private Cart cart;
     
     private int wrongpasswordcounter = 0;
 

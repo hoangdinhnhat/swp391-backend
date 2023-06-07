@@ -5,25 +5,47 @@
 package com.swp391.backend.controllers.user;
 
 import com.swp391.backend.controllers.authentication.AuthenticatedManager;
+import com.swp391.backend.model.cart.Cart;
+import com.swp391.backend.model.cart.CartItem;
+import com.swp391.backend.model.cart.CartService;
+import com.swp391.backend.model.cartProduct.CartProduct;
+import com.swp391.backend.model.cartProduct.CartProductDTO;
+import com.swp391.backend.model.cartProduct.CartProductKey;
+import com.swp391.backend.model.cartProduct.CartProductService;
+import com.swp391.backend.model.product.Product;
+import com.swp391.backend.model.product.ProductService;
+import com.swp391.backend.model.productSale.ProductSale;
+import com.swp391.backend.model.productSale.ProductSaleService;
 import com.swp391.backend.model.receiveinfo.ReceiveInfo;
 import com.swp391.backend.model.receiveinfo.ReceiveInfoService;
+import com.swp391.backend.model.shop.Shop;
+import com.swp391.backend.model.shop.ShopDTO;
+import com.swp391.backend.model.shop.ShopService;
 import com.swp391.backend.model.user.User;
 import com.swp391.backend.model.user.UserDTO;
 import com.swp391.backend.model.user.UserService;
+import com.swp391.backend.utils.json.JsonUtils;
 import com.swp391.backend.utils.storage.StorageService;
+
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -31,7 +53,6 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 /**
- *
  * @author Lenovo
  */
 @RestController
@@ -42,18 +63,33 @@ public class UserDetailController {
     private final UserService userService;
     private final AuthenticatedManager authenticatedManager;
     private final PasswordEncoder passwordEncoder;
-    private final StorageService storageService;
+    @Autowired
+    @Qualifier(value = "avatar")
+    private StorageService storageService;
     private final ReceiveInfoService receiveInfoService;
+
+    private final CartProductService cartProductService;
+    private final CartService cartService;
+    private final ProductService productService;
+    private final ShopService shopService;
+    private final JsonUtils JSON;
+    private final ProductSaleService productSaleService;
 
 //    @GetMapping("/{email}")
 //    @PreAuthorize("#email == authentication.principal.username")
 //    public UserDetails get(@PathVariable("email") String email) {
 //        return userService.loadUserByUsername(email);
 //    }
+
     @GetMapping("/info")
     public ResponseEntity<UserDTO> loginUserInfo() {
         User user = (User) authenticatedManager.getAuthenticatedUser();
         int page = receiveInfoService.getMaxPage(user);
+        List<CartProduct> cartProducts = null;
+        Cart cart = user.getCart();
+        if (cart != null) {
+            cartProducts = cartProductService.getCartProductByCart(cart, 1);
+        }
         UserDTO userDTO = UserDTO.builder()
                 .email(user.getEmail())
                 .firstname(user.getFirstname())
@@ -61,6 +97,7 @@ public class UserDetailController {
                 .imageurl(user.getImageurl())
                 .gender(user.getGender())
                 .receiveInfoPage(page)
+                .cartProducts(cartProducts)
                 .build();
         return ResponseEntity.ok().body(userDTO);
     }
@@ -139,7 +176,7 @@ public class UserDetailController {
         return ResponseEntity.ok().body(receiveInfoService.getReceiveInfo(user, pageNum));
     }
 
-    @GetMapping("/info/receives/default/{receive_id}")
+    @PostMapping("/info/receives/default/{receive_id}")
     public ResponseEntity<ReceiveInfo> setReceiveInfoDefault(@PathVariable("receive_id") Integer id) {
         User user = (User) authenticatedManager.getAuthenticatedUser();
         ReceiveInfo info = receiveInfoService.getReceiveInfo(id);
@@ -154,10 +191,120 @@ public class UserDetailController {
         receiveInfoService.saveReceiveInfos(infos);
         return ResponseEntity.ok().body(info);
     }
-    
-    @GetMapping("/info/receives/delete/{delete_id}")
+
+    @DeleteMapping("/info/receives/delete/{delete_id}")
     public ResponseEntity<String> deleteReceiveInfo(@PathVariable("delete_id") Integer id) {
         receiveInfoService.deleteReceiveInfo(id);
         return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/cart")
+    public ResponseEntity<List<CartItem>> getCart(@RequestParam("page") Optional<Integer> page) {
+        User user = (User) authenticatedManager.getAuthenticatedUser();
+        Integer pageId = page.orElse(1) - 1;
+        Cart cart = user.getCart();
+        if (cart == null) {
+            ResponseEntity.badRequest().build();
+        }
+        HashMap<ShopDTO, List<CartProductDTO>> mapper = new HashMap<>();
+        cartProductService.getCartProductByCart(cart, pageId)
+                .forEach(i -> {
+                    Integer shopId = i.getProduct().getShop().getId();
+                    Shop shop = shopService.getShopById(shopId);
+                    if (mapper.get(shop.toDto()) == null) {
+                        List<CartProductDTO> products = new ArrayList<>();
+
+                        ProductSale pSale = productSaleService.findProductInSale(i.getProduct());
+
+                        CartProductDTO dto = CartProductDTO.builder()
+                                .saleQuantity(pSale.getSaleQuantity())
+                                .saleSold(pSale.getSold())
+                                .product(i.getProduct())
+                                .salePercent(pSale.getSaleEvent().getPercent())
+                                .quantity(i.getQuantity())
+                                .build();
+
+                        products.add(dto);
+                        mapper.put(shop.toDto(), products);
+                    } else {
+                        List<CartProductDTO> products = mapper.get(shop.toDto());
+                        ProductSale pSale = productSaleService.findProductInSale(i.getProduct());
+
+                        CartProductDTO dto = CartProductDTO.builder()
+                                .saleQuantity(pSale.getSaleQuantity())
+                                .saleSold(pSale.getSold())
+                                .product(i.getProduct())
+                                .quantity(i.getQuantity())
+                                .build();
+                        products.add(dto);
+                        mapper.put(shop.toDto(), products);
+                    }
+                });
+        List<CartItem> cartItems = new ArrayList<>();
+        mapper.keySet().forEach(it -> {
+            List<CartProductDTO> value = mapper.get(it);
+            var cartItem = CartItem.builder()
+                    .shop(it)
+                    .cartProducts(value)
+                    .build();
+            cartItems.add(cartItem);
+        });
+        return ResponseEntity.ok().body(cartItems);
+    }
+
+    @PostMapping("/cart/{product_id}")
+    public ResponseEntity<String> addProductToCart(@PathVariable("product_id") Integer product_id, @RequestParam("quantity") Optional<Integer> quan) {
+        User user = (User) authenticatedManager.getAuthenticatedUser();
+        Cart cart = user.getCart();
+        Integer quantity = quan.orElse(1);
+        if (cart == null) {
+            cart = new Cart();
+            cartService.save(cart);
+            user.setCart(cart);
+            userService.save(user);
+        }
+        Product product = productService.getProductById(product_id);
+        CartProduct findedCartProduct = cartProductService.findByCartAndProduct(cart, product);
+
+        if (findedCartProduct != null) {
+            quantity += findedCartProduct.getQuantity();
+        }
+
+        CartProductKey id = new CartProductKey();
+        id.cartId = cart.getId();
+        id.productId = product.getId();
+
+        var cartProduct = CartProduct.builder()
+                .product(product)
+                .id(id)
+                .cart(cart)
+                .quantity(quantity)
+                .build();
+
+        cartProductService.save(cartProduct);
+        return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/cart/{product_id}")
+    public ResponseEntity<String> deleteProductFromCart(@PathVariable("product_id") Integer product_id) {
+        User user = (User) authenticatedManager.getAuthenticatedUser();
+        Cart cart = user.getCart();
+        if (cart == null) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        Product product = productService.getProductById(product_id);
+
+        CartProductKey id = new CartProductKey();
+        id.cartId = cart.getId();
+        id.productId = product.getId();
+
+        cartProductService.delete(id);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/shop/create")
+    public void createShop() {
+
     }
 }

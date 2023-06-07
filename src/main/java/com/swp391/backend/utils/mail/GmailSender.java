@@ -53,6 +53,7 @@ public class GmailSender implements EmailSender{
                 httpTransport, jsonFactory, clientSecrets, Collections.singletonList(GmailScopes.GMAIL_SEND))
                 .setDataStoreFactory(new FileDataStoreFactory(Paths.get("tokens").toFile()))
                 .setAccessType("offline")
+                .setApprovalPrompt("force")
                 .build();
 
         LocalServerReceiver receiver = new LocalServerReceiver.Builder().setPort(8888).build();

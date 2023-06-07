@@ -4,6 +4,7 @@
  */
 package com.swp391.backend.security;
 
+import com.google.gson.Gson;
 import com.swp391.backend.model.user.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,6 +46,12 @@ public class ApplicationConfig {
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+    public Gson gsonUtils()
+    {
+        return new Gson();
     }
     
 }

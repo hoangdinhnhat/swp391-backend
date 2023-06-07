@@ -10,6 +10,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 /**
@@ -54,5 +56,34 @@ public class UserService implements UserDetailsService {
     {
         user.setEnabled(true);
         repository.save(user);
+    }
+
+    public void init()
+    {
+        var user1 = User.builder()
+                .firstname("Bao")
+                .lastname("Tran Thien Thanh")
+                .email("tranthienthanhbao@gmail.com")
+                .gender(Gender.MALE)
+                .enabled(true)
+                .locked(false)
+                .imageurl("/api/v1/publics/user/avatar/tranthienthanhbao@gmail.com")
+                .password(new BCryptPasswordEncoder().encode("1234"))
+                .role(Role.CUSTOMER)
+                .build();
+        save(user1);
+
+        var user2 = User.builder()
+                .firstname("Thien")
+                .lastname("Vu Duc")
+                .email("vuducthien@gmail.com")
+                .gender(Gender.MALE)
+                .enabled(true)
+                .locked(false)
+                .imageurl("/api/v1/publics/user/avatar/vuducthien@gmail.com")
+                .password(new BCryptPasswordEncoder().encode("1234"))
+                .role(Role.CUSTOMER)
+                .build();
+        save(user2);
     }
 }

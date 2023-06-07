@@ -142,9 +142,10 @@ public class AuthenticationService {
                 }
             }
         } else {
+            String lastName = request.getFamily_name() == null ? "" : request.getFamily_name();
             user = User.builder()
                     .firstname(request.getGiven_name())
-                    .lastname(request.getFamily_name())
+                    .lastname(lastName)
                     .email(request.getEmail())
                     .gender(null)
                     .imageurl(request.getPicture())
