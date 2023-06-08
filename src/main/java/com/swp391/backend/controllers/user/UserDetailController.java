@@ -244,12 +244,28 @@ public class UserDetailController {
                         List<CartProductDTO> products = mapper.get(shop.getId());
                         ProductSale pSale = productSaleService.findProductInSale(i.getProduct());
 
-                        CartProductDTO dto = CartProductDTO.builder()
-                                .saleQuantity(pSale.getSaleQuantity())
-                                .saleSold(pSale.getSold())
-                                .product(i.getProduct())
-                                .quantity(i.getQuantity())
-                                .build();
+                        CartProductDTO dto = null;
+
+                        if (pSale != null)
+                        {
+                            dto = CartProductDTO.builder()
+                                    .saleQuantity(pSale.getSaleQuantity())
+                                    .saleSold(pSale.getSold())
+                                    .product(i.getProduct())
+                                    .salePercent(pSale.getSaleEvent().getPercent())
+                                    .quantity(i.getQuantity())
+                                    .build();
+                        }else
+                        {
+                            dto = CartProductDTO.builder()
+                                    .saleQuantity(0)
+                                    .saleSold(0)
+                                    .product(i.getProduct())
+                                    .salePercent(0)
+                                    .quantity(i.getQuantity())
+                                    .build();
+                        }
+
                         products.add(dto);
                         mapper.put(shop.getId(), products);
                     }
