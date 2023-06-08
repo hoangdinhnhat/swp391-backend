@@ -206,28 +206,42 @@ public class UserDetailController {
         if (cart == null) {
             ResponseEntity.badRequest().build();
         }
-        HashMap<ShopDTO, List<CartProductDTO>> mapper = new HashMap<>();
+        HashMap<Integer, List<CartProductDTO>> mapper = new HashMap<>();
         cartProductService.getCartProductByCart(cart, pageId)
                 .forEach(i -> {
                     Integer shopId = i.getProduct().getShop().getId();
                     Shop shop = shopService.getShopById(shopId);
-                    if (mapper.get(shop.toDto()) == null) {
+                    if (mapper.get(shop.getId()) == null) {
                         List<CartProductDTO> products = new ArrayList<>();
 
+
+                        CartProductDTO dto = null;
                         ProductSale pSale = productSaleService.findProductInSale(i.getProduct());
 
-                        CartProductDTO dto = CartProductDTO.builder()
-                                .saleQuantity(pSale.getSaleQuantity())
-                                .saleSold(pSale.getSold())
-                                .product(i.getProduct())
-                                .salePercent(pSale.getSaleEvent().getPercent())
-                                .quantity(i.getQuantity())
-                                .build();
+                        if (pSale != null)
+                        {
+                            dto = CartProductDTO.builder()
+                                    .saleQuantity(pSale.getSaleQuantity())
+                                    .saleSold(pSale.getSold())
+                                    .product(i.getProduct())
+                                    .salePercent(pSale.getSaleEvent().getPercent())
+                                    .quantity(i.getQuantity())
+                                    .build();
+                        }else
+                        {
+                            dto = CartProductDTO.builder()
+                                    .saleQuantity(0)
+                                    .saleSold(0)
+                                    .product(i.getProduct())
+                                    .salePercent(0)
+                                    .quantity(i.getQuantity())
+                                    .build();
+                        }
 
                         products.add(dto);
-                        mapper.put(shop.toDto(), products);
+                        mapper.put(shop.getId(), products);
                     } else {
-                        List<CartProductDTO> products = mapper.get(shop.toDto());
+                        List<CartProductDTO> products = mapper.get(shop.getId());
                         ProductSale pSale = productSaleService.findProductInSale(i.getProduct());
 
                         CartProductDTO dto = CartProductDTO.builder()
@@ -237,14 +251,14 @@ public class UserDetailController {
                                 .quantity(i.getQuantity())
                                 .build();
                         products.add(dto);
-                        mapper.put(shop.toDto(), products);
+                        mapper.put(shop.getId(), products);
                     }
                 });
         List<CartItem> cartItems = new ArrayList<>();
         mapper.keySet().forEach(it -> {
             List<CartProductDTO> value = mapper.get(it);
             var cartItem = CartItem.builder()
-                    .shop(it)
+                    .shop(shopService.getShopById(it).toDto())
                     .cartProducts(value)
                     .build();
             cartItems.add(cartItem);
