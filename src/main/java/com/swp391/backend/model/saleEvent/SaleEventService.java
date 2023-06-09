@@ -41,7 +41,7 @@ public class SaleEventService {
         event.setPercent(10);
         save(event);
 
-        for(int i = 1; i <= 4; i++)
+        for(int i = 1; i <= 19; i++)
         {
             ProductSale ps = new ProductSale();
             ProductSaleKey pk = new ProductSaleKey();
@@ -56,7 +56,7 @@ public class SaleEventService {
             productSaleService.save(ps);
         }
 
-        for(int i = 20; i <= 21; i++)
+        for(int i = 20; i <= 39; i++)
         {
             ProductSale ps = new ProductSale();
             ProductSaleKey pk = new ProductSaleKey();
@@ -71,7 +71,7 @@ public class SaleEventService {
             productSaleService.save(ps);
         }
 
-        for(int i = 40; i <= 41; i++)
+        for(int i = 40; i <= 59; i++)
         {
             ProductSale ps = new ProductSale();
             ProductSaleKey pk = new ProductSaleKey();
@@ -86,7 +86,7 @@ public class SaleEventService {
             productSaleService.save(ps);
         }
 
-        for(int i = 60; i <= 61; i++)
+        for(int i = 60; i <= 79; i++)
         {
             ProductSale ps = new ProductSale();
             ProductSaleKey pk = new ProductSaleKey();

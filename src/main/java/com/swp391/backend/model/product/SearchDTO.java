@@ -15,4 +15,5 @@ import java.util.List;
 public class SearchDTO {
     private ShopDTO shop;
     private List<ProductSaleDTO> products;
+    private int maxPage;
 }

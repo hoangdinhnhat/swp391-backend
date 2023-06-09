@@ -20,7 +20,7 @@ public class CategoryGroupService {
         List<Product> products = new ArrayList<>();
         categoryGroups.forEach(c -> {
             c.getProducts().forEach(it -> {
-                if (products.size() < 5) {
+                if (products.size() < 6) {
                     products.add(it);
                 }
             });

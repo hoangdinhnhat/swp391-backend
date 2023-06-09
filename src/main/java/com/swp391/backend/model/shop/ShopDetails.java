@@ -1,6 +1,9 @@
 package com.swp391.backend.model.shop;
 
+import com.swp391.backend.model.product.Product;
 import lombok.*;
+
+import java.util.List;
 
 @Getter
 @Setter
@@ -8,6 +11,7 @@ import lombok.*;
 @Builder
 @NoArgsConstructor
 public class ShopDetails {
-    private ShopDTO shop;
-
+    private ShopDTO shopDetails;
+    private List<Product> products;
+    private int maxPage;
 }

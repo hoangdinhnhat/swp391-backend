@@ -64,14 +64,10 @@ public class PublicController {
     private final AttachWithService attachWithService;
     private final CategoryGroupService categoryGroupService;
     private final ShopService shopService;
-    private final CategoryRepository categoryRepository;
-    private final CategoryDetailInfoRepository categoryDetailInfoRepository;
-    private final ProductDetailInfoRepository productDetailInfoRepository;
     private final SaleEventService saleEventService;
     private final ProductSaleService productSaleService;
     private final JsonUtils JSON;
     private final FeedbackService feedbackService;
-    private final ProductFeedbackImageService productFeedbackImageService;
     private final CategoryDetailInfoService categoryDetailInfoService;
 
     @Autowired
@@ -92,11 +88,6 @@ public class PublicController {
     @Autowired
     @Qualifier(value = "productFeedbackImage")
     private StorageService productFeedbackImageStorageService;
-
-//    @GetMapping
-//    public Product init() {
-//
-//    }
 
     @GetMapping("/user/avatar/{email}")
     public ResponseEntity<Resource> getProductImage(@PathVariable("email") String email) {
@@ -164,11 +155,12 @@ public class PublicController {
     }
 
     @GetMapping("/product/search")
-    public ResponseEntity<SearchDTO> search(@RequestParam("keyword") String keyword, @RequestParam("page") Optional<Integer> pageOpt) {
+    public ResponseEntity<SearchDTO> search(@RequestParam("keyword") String keyword, @RequestParam("page") Optional<Integer> pageOpt, @RequestParam("filter") Optional<String> flt) {
         Integer page = pageOpt.orElse(1) - 1;
+        String filter = flt.orElse("default");
         Shop shop = shopService.searchShop(keyword);
         ProductSaleDTO productSaleDto = null;
-        List<ProductSaleDTO> products = productService.searchProduct(keyword, page).stream()
+        List<ProductSaleDTO> products = productService.searchProduct(keyword, page, filter).stream()
                 .map(it -> {
                     var find = productSaleService.findProductInSale(it);
                     if (find != null) {
@@ -182,9 +174,12 @@ public class PublicController {
         ShopDTO dto = null;
         if (shop != null) dto = shop.toDto();
 
+        int maxPage = productService.getMaxPage(keyword);
+
         var searchDTO = SearchDTO.builder()
                 .shop(dto)
                 .products(products)
+                .maxPage(maxPage)
                 .build();
         return ResponseEntity.ok().body(searchDTO);
     }
@@ -192,7 +187,7 @@ public class PublicController {
     private final CategoryService categoryService;
 
     @GetMapping("/category/{category_id}")
-    public List<ProductDTO> search(@PathVariable("category_id") Integer category_id) {
+    public List<ProductDTO> getCategory(@PathVariable("category_id") Integer category_id) {
         Category category = categoryService.getById(category_id);
         List<Product> products = new ArrayList<>();
         category.getCategoryGroups().forEach(it -> {
@@ -213,6 +208,33 @@ public class PublicController {
                     .name(it.getName())
                     .images(it.getImages())
                     .category(category.toDto())
+                    .price(it.getPrice())
+                    .rating(it.getRating())
+                    .sold(it.getSold())
+                    .productSale(productSaleDto)
+                    .build();
+        }).collect(Collectors.toList());
+    }
+
+    @GetMapping("/category/category-group/{category_group_id}")
+    public List<ProductDTO> getCategoryGroup(@PathVariable("category_group_id") Integer category_group_id) {
+        var categoryGroup = categoryGroupService.getCategoryGroupById(category_group_id);
+        List<Product> products = categoryGroup.getProducts();
+
+        return products.stream().map(it -> {
+            ProductSaleDTO productSaleDto = null;
+
+            var productSale = productSaleService.findProductInSale(it);
+            if (productSale != null) {
+                productSaleDto = productSale.toDto();
+                productSaleDto.setProduct(null);
+            }
+
+            return ProductDTO.builder()
+                    .id(it.getId())
+                    .name(it.getName())
+                    .images(it.getImages())
+                    .categoryGroup(categoryGroup.toDTO())
                     .price(it.getPrice())
                     .rating(it.getRating())
                     .sold(it.getSold())
@@ -375,10 +397,25 @@ public class PublicController {
     }
 
     @GetMapping("/shop/{id}")
-    public Shop shopDetail(@PathVariable("id") Optional<Integer> id) {
+    public ShopDetails shopDetail(
+            @PathVariable("id") Optional<Integer> id,
+            @RequestParam("page") Optional<Integer> pageId,
+            @RequestParam("filter") Optional<String> flt
+    )
+    {
         Integer shopId = id.orElse(1);
+        Integer page = pageId.orElse(1) - 1;
+        String filter = flt.orElse("default");
         Shop shop = shopService.getShopById(shopId);
-        return shop;
+        List<Product> products = productService.getByShop(shop, page, filter);
+        int maxPage = productService.getMaxPage(shop);
+
+        return ShopDetails
+                .builder()
+                .shopDetails(shop.toDto())
+                .maxPage(maxPage)
+                .products(products)
+                .build();
     }
 
     @GetMapping("/shop/trending")
@@ -387,10 +424,17 @@ public class PublicController {
     }
 
     @GetMapping("/event/{sale_event}")
-    public List<ProductSaleDTO> saleEventDetail(@PathVariable("sale_event") Integer sale_event, @RequestParam("page") Optional<Integer> page, @RequestParam("priority") Optional<Integer> priority) {
+    public List<ProductSaleDTO> saleEventDetail(
+            @PathVariable("sale_event") Integer sale_event,
+            @RequestParam("page") Optional<Integer> page,
+            @RequestParam("priority") Optional<Integer> priority,
+            @RequestParam("filter") Optional<String> flt
+    )
+    {
         SaleEvent event = saleEventService.getSaleEventById(sale_event);
         Integer pageId = page.orElse(1) - 1;
         Integer priorityId = priority.orElse(-1);
+        String filter = flt.orElse("all");
         var product = productService.getProductById(priorityId);
         List<ProductSaleDTO> finded = productSaleService.getBySaleEvent(event, pageId)
                 .stream()
@@ -412,7 +456,19 @@ public class PublicController {
                             .collect(Collectors.toList())
             );
         } else result = finded;
-        return result;
+
+        if(filter.equals("all"))
+        {
+            return result;
+        }
+
+        return result
+                .stream()
+                .filter(it -> {
+                    String category = it.getProduct().getCategoryGroup().getCategory().getName();
+                    return category.toLowerCase().equals(filter.toLowerCase());
+                })
+                .collect(Collectors.toList());
     }
 
     private final CartProductService cartProductService;

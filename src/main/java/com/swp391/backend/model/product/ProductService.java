@@ -11,6 +11,8 @@ import com.swp391.backend.model.productFeedbackImage.ProductFeedbackImage;
 import com.swp391.backend.model.productFeedbackImage.ProductFeedbackImageService;
 import com.swp391.backend.model.productImage.ProductImage;
 import com.swp391.backend.model.productImage.ProductImageServie;
+import com.swp391.backend.model.receiveinfo.ReceiveInfo;
+import com.swp391.backend.model.shop.Shop;
 import com.swp391.backend.model.shop.ShopService;
 import com.swp391.backend.model.user.User;
 import com.swp391.backend.model.user.UserService;
@@ -50,12 +52,66 @@ public class ProductService {
         return productRepository.findAll(pageable).getContent();
     }
 
+    public List<Product> getByShop(Shop shop, Integer page, String filter)
+    {
+        Pageable pageable = null;
+        switch (filter)
+        {
+            case "top sales":
+                pageable = PageRequest.of(page, 40, Sort.by("sold").descending());
+                break;
+            case "ratings":
+                pageable = PageRequest.of(page, 40, Sort.by("rating").descending());
+                break;
+            case "low to high":
+                pageable = PageRequest.of(page, 40, Sort.by("price").ascending());
+                break;
+            case "high to low":
+                pageable = PageRequest.of(page, 40, Sort.by("price").descending());
+                break;
+            default:
+                pageable = PageRequest.of(page, 40, Sort.by("sold").descending().and(Sort.by("rating").descending()));
+        }
+        return productRepository.findByShop(shop, pageable);
+    }
+
+    public int getMaxPage(Shop shop) {
+        List<Product> list = productRepository.findByShop(shop);
+        int length = list.size();
+        int page = Math.floorDiv(length, 40) + 1;
+        return page;
+    }
+
+    public int getMaxPage(String search) {
+        List<Product> list = productRepository.findByNameContainingIgnoreCase(search);
+        int length = list.size();
+        int page = Math.floorDiv(length, 40) + 1;
+        return page;
+    }
+
     public Product getProductById(Integer id) {
         return productRepository.findById(id).orElse(null);
     }
 
-    public List<Product> searchProduct(String search, Integer page) {
-        Pageable pageable = PageRequest.of(page, 40, Sort.by("sold").descending().and(Sort.by("rating").descending()));
+    public List<Product> searchProduct(String search, Integer page, String filter) {
+        Pageable pageable = null;
+        switch (filter)
+        {
+            case "top sales":
+                pageable = PageRequest.of(page, 40, Sort.by("sold").descending());
+                break;
+            case "ratings":
+                pageable = PageRequest.of(page, 40, Sort.by("rating").descending());
+                break;
+            case "low to high":
+                pageable = PageRequest.of(page, 40, Sort.by("price").ascending());
+                break;
+            case "high to low":
+                pageable = PageRequest.of(page, 40, Sort.by("price").descending());
+                break;
+            default:
+                pageable = PageRequest.of(page, 40, Sort.by("sold").descending().and(Sort.by("rating").descending()));
+        }
         return productRepository.findByNameContainingIgnoreCase(search, pageable);
     }
 
@@ -99,6 +155,7 @@ public class ProductService {
                 "   ⚠\uFE0F NOTE: When opening the product, please return to the video of the product opening process to be 100% guaranteed to exchange for a new product if the VENDER T-shirt delivered is faulty.";
 
         for (int i = 1; i < 20; i++) {
+            double price = Math.round(Math.random() * 999 + 1000);
             var product1 = Product.builder()
                     .name("African crested bird")
                     .categoryGroup(categoryGroupService.getCategoryGroupById(1))
@@ -106,7 +163,7 @@ public class ProductService {
                     .video("/api/v1/publics/product/video/" + 1)
                     .description(des)
                     .available(20)
-                    .price(1000)
+                    .price(price)
                     .build();
             save(product1);
 
@@ -162,6 +219,7 @@ public class ProductService {
             productFeedbackImageService.save(pfi2);
         }
         for (int i = 20; i < 40; i++) {
+            double price = Math.round(Math.random() * 999 + 1000);
             var product1 = Product.builder()
                     .name("African bird's food")
                     .categoryGroup(categoryGroupService.getCategoryGroupById(3))
@@ -169,7 +227,7 @@ public class ProductService {
                     .video("/api/v1/publics/product/video/" + 1)
                     .description(des)
                     .available(20)
-                    .price(1000)
+                    .price(price)
                     .build();
             save(product1);
 
@@ -225,13 +283,14 @@ public class ProductService {
             productFeedbackImageService.save(pfi2);
         }
         for (int i = 40; i < 60; i++) {
+            double price = Math.round(Math.random() * 999 + 1000);
             var product1 = Product.builder()
                     .name("African bird's cage")
                     .categoryGroup(categoryGroupService.getCategoryGroupById(4))
                     .shop(shopService.getShopById(3))
                     .description(des)
                     .available(20)
-                    .price(1000)
+                    .price(price)
                     .build();
             save(product1);
 
@@ -287,13 +346,14 @@ public class ProductService {
             productFeedbackImageService.save(pfi2);
         }
         for (int i = 60; i < 80; i++) {
+            double price = Math.round(Math.random() * 999 + 1000);
             var product1 = Product.builder()
                     .name("African bird's accessories")
                     .categoryGroup(categoryGroupService.getCategoryGroupById(4))
                     .shop(shopService.getShopById(3))
                     .description(des)
                     .available(20)
-                    .price(1000)
+                    .price(price)
                     .build();
             save(product1);
 

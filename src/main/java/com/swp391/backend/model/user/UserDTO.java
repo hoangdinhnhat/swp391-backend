@@ -29,4 +29,5 @@ public class UserDTO {
     private Gender gender;
     private int receiveInfoPage;
     private List<CartProduct> cartProducts;
+    private ReceiveInfo  defaultReceiveInfo;
 }

@@ -84,6 +84,7 @@ public class UserDetailController {
     @GetMapping("/info")
     public ResponseEntity<UserDTO> loginUserInfo() {
         User user = (User) authenticatedManager.getAuthenticatedUser();
+        var defaultInfo = receiveInfoService.getDefaultReceiveInfo(user);
         int page = receiveInfoService.getMaxPage(user);
         List<CartProduct> cartProducts = null;
         Cart cart = user.getCart();
@@ -97,6 +98,7 @@ public class UserDetailController {
                 .imageurl(user.getImageurl())
                 .gender(user.getGender())
                 .receiveInfoPage(page)
+                .defaultReceiveInfo(defaultInfo)
                 .cartProducts(cartProducts)
                 .build();
         return ResponseEntity.ok().body(userDTO);
