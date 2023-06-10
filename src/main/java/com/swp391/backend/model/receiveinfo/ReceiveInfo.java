@@ -5,7 +5,11 @@
 package com.swp391.backend.model.receiveinfo;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.swp391.backend.model.district.District;
+import com.swp391.backend.model.province.Province;
 import com.swp391.backend.model.user.User;
+import com.swp391.backend.model.ward.Ward;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.Id;
@@ -32,9 +36,22 @@ public class ReceiveInfo {
     private Integer id;
     private String fullname;
     private String phone;
-    private String province;
-    private String district;
-    private String ward;
+
+    @ManyToOne
+    @JoinColumn(name = "province_id", nullable = false)
+    @JsonManagedReference
+    private Province province;
+
+    @ManyToOne
+    @JoinColumn(name = "district_id", nullable = false)
+    @JsonManagedReference
+    private District district;
+
+    @ManyToOne
+    @JoinColumn(name = "ward_id", nullable = false)
+    @JsonManagedReference
+    private Ward ward;
+
     private String specific_address;
     private boolean _default;
     

@@ -1,5 +1,6 @@
 package com.swp391.backend.model.product;
 
+import com.swp391.backend.model.category.Category;
 import com.swp391.backend.model.categoryDetailInfo.CategoryDetailInfo;
 import com.swp391.backend.model.categoryDetailInfo.CategoryDetailInfoService;
 import com.swp391.backend.model.categoryGroup.CategoryGroupService;
@@ -89,6 +90,13 @@ public class ProductService {
         return page;
     }
 
+    public int getMaxPage(Category category) {
+        List<Product> list = productRepository.findByCategory(category.getId());
+        int length = list.size();
+        int page = Math.floorDiv(length, 40) + 1;
+        return page;
+    }
+
     public Product getProductById(Integer id) {
         return productRepository.findById(id).orElse(null);
     }
@@ -117,6 +125,29 @@ public class ProductService {
 
     public Product save(Product product) {
         return productRepository.save(product);
+    }
+
+    public List<Product> getByCategory(Category category, Integer page, String filter)
+    {
+        Pageable pageable = null;
+        switch (filter)
+        {
+            case "top sales":
+                pageable = PageRequest.of(page, 40, Sort.by("sold").descending());
+                break;
+            case "ratings":
+                pageable = PageRequest.of(page, 40, Sort.by("rating").descending());
+                break;
+            case "low to high":
+                pageable = PageRequest.of(page, 40, Sort.by("price").ascending());
+                break;
+            case "high to low":
+                pageable = PageRequest.of(page, 40, Sort.by("price").descending());
+                break;
+            default:
+                pageable = PageRequest.of(page, 40, Sort.by("sold").descending().and(Sort.by("rating").descending()));
+        }
+        return productRepository.findByCategory(category.getId(), pageable);
     }
 
     public void delete(Integer id) {
@@ -207,6 +238,7 @@ public class ProductService {
                     .build();
 
             feedbackService.save(feedback1);
+
             var pfi = ProductFeedbackImage.builder()
                     .url("/api/v1/publics/product/feedbacks/image/" + 1 + "?imgId=1")
                     .feedback(feedback1)
@@ -271,6 +303,7 @@ public class ProductService {
                     .build();
 
             feedbackService.save(feedback1);
+
             var pfi = ProductFeedbackImage.builder()
                     .url("/api/v1/publics/product/feedbacks/image/" + 1 + "?imgId=1")
                     .feedback(feedback1)
@@ -334,6 +367,7 @@ public class ProductService {
                     .build();
 
             feedbackService.save(feedback1);
+
             var pfi = ProductFeedbackImage.builder()
                     .url("/api/v1/publics/product/feedbacks/image/" + 1 + "?imgId=1")
                     .feedback(feedback1)
@@ -411,6 +445,7 @@ public class ProductService {
                         .build();
             }
             feedbackService.save(feedback1);
+
             var pfi = ProductFeedbackImage.builder()
                     .url("/api/v1/publics/product/feedbacks/image/" + feedback1.getId() + "?imgId=1")
                     .feedback(feedback1)

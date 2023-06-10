@@ -6,8 +6,10 @@ package com.swp391.backend.model.shop;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.swp391.backend.model.cart.Cart;
 import com.swp391.backend.model.category.Category;
 import com.swp391.backend.model.product.Product;
+import com.swp391.backend.model.shopAddress.ShopAddress;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
@@ -42,6 +44,10 @@ public class Shop {
     @JsonManagedReference
     List<Product> products;
 
+    @OneToOne(cascade = CascadeType.ALL)
+    @JoinColumn(name = "shop_addess_id", referencedColumnName = "id")
+    private ShopAddress shopAddress;
+
     public double getRating()
     {
         double rating = 0;
@@ -64,7 +70,8 @@ public class Shop {
                 .name(name)
                 .shopImage(shopImage)
                 .products(products.size())
-                .rating(getRating())
+                .address(shopAddress)
+                .rating(rating)
                 .joinTime(joinTime)
                 .build();
     }

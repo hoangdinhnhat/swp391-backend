@@ -13,6 +13,7 @@ import com.swp391.backend.model.cartProduct.CartProduct;
 import com.swp391.backend.model.cartProduct.CartProductKey;
 import com.swp391.backend.model.cartProduct.CartProductService;
 import com.swp391.backend.model.category.Category;
+import com.swp391.backend.model.category.CategoryDetails;
 import com.swp391.backend.model.category.CategoryRepository;
 import com.swp391.backend.model.category.CategoryService;
 import com.swp391.backend.model.categoryDetailInfo.CategoryDetailInfoRepository;
@@ -187,33 +188,36 @@ public class PublicController {
     private final CategoryService categoryService;
 
     @GetMapping("/category/{category_id}")
-    public List<ProductDTO> getCategory(@PathVariable("category_id") Integer category_id) {
+    public CategoryDetails getCategory(@PathVariable("category_id") Integer category_id, @RequestParam("page") Optional<Integer> pageOpt, @RequestParam("filter") Optional<String> flt) {
         Category category = categoryService.getById(category_id);
-        List<Product> products = new ArrayList<>();
-        category.getCategoryGroups().forEach(it -> {
-            products.addAll(it.getProducts());
-        });
+        Integer page = pageOpt.orElse(1) - 1;
+        String filter = flt.orElse("default");
+        List<ProductSaleDTO> products = productService.getByCategory(category, page, filter).stream()
+                .map(it -> {
+                    var find = productSaleService.findProductInSale(it);
+                    if (find != null) {
+                        return find.toDto();
+                    } else {
+                        return ProductSaleDTO.builder()
+                                .product(it)
+                                .build();
+                    }
+                }).collect(Collectors.toList());
 
-        return products.stream().map(it -> {
-            ProductSaleDTO productSaleDto = null;
+        List<ShopDTO> shops = shopService.topThreeShopInCategory(category)
+                .stream()
+                .map(it -> it.toDto())
+                .collect(Collectors.toList());
 
-            var productSale = productSaleService.findProductInSale(it);
-            if (productSale != null) {
-                productSaleDto = productSale.toDto();
-                productSaleDto.setProduct(null);
-            }
+        int maxPage = productService.getMaxPage(category);
 
-            return ProductDTO.builder()
-                    .id(it.getId())
-                    .name(it.getName())
-                    .images(it.getImages())
-                    .category(category.toDto())
-                    .price(it.getPrice())
-                    .rating(it.getRating())
-                    .sold(it.getSold())
-                    .productSale(productSaleDto)
-                    .build();
-        }).collect(Collectors.toList());
+        return CategoryDetails
+                .builder()
+                .shops(shops)
+                .ps(products)
+                .categoryName(category.getName())
+                .maxPage(maxPage)
+                .build();
     }
 
     @GetMapping("/category/category-group/{category_group_id}")
@@ -401,8 +405,7 @@ public class PublicController {
             @PathVariable("id") Optional<Integer> id,
             @RequestParam("page") Optional<Integer> pageId,
             @RequestParam("filter") Optional<String> flt
-    )
-    {
+    ) {
         Integer shopId = id.orElse(1);
         Integer page = pageId.orElse(1) - 1;
         String filter = flt.orElse("default");
@@ -429,8 +432,7 @@ public class PublicController {
             @RequestParam("page") Optional<Integer> page,
             @RequestParam("priority") Optional<Integer> priority,
             @RequestParam("filter") Optional<String> flt
-    )
-    {
+    ) {
         SaleEvent event = saleEventService.getSaleEventById(sale_event);
         Integer pageId = page.orElse(1) - 1;
         Integer priorityId = priority.orElse(-1);
@@ -457,8 +459,7 @@ public class PublicController {
             );
         } else result = finded;
 
-        if(filter.equals("all"))
-        {
+        if (filter.equals("all")) {
             return result;
         }
 

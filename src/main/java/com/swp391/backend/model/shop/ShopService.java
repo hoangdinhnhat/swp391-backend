@@ -1,5 +1,8 @@
 package com.swp391.backend.model.shop;
 
+import com.swp391.backend.model.category.Category;
+import com.swp391.backend.model.province.Province;
+import com.swp391.backend.model.shopAddress.ShopAddress;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -37,6 +40,12 @@ public class ShopService {
         Pageable pageable = PageRequest.of(0, 1, Sort.by("rating").descending());
         List<Shop> finded = shopRepository.findByNameContainingIgnoreCase(search, pageable);
         return finded.size() > 0 ? finded.get(0) : null;
+    }
+
+    public List<Shop> topThreeShopInCategory(Category category)
+    {
+        Pageable pageable = PageRequest.of(0, 3, Sort.by("rating").descending());
+        return shopRepository.findByCategory(category.getId(), pageable);
     }
 
     public void init() {

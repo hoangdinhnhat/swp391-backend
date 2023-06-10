@@ -12,10 +12,14 @@ import com.swp391.backend.model.cartProduct.CartProduct;
 import com.swp391.backend.model.cartProduct.CartProductDTO;
 import com.swp391.backend.model.cartProduct.CartProductKey;
 import com.swp391.backend.model.cartProduct.CartProductService;
+import com.swp391.backend.model.district.District;
+import com.swp391.backend.model.district.DistrictService;
 import com.swp391.backend.model.product.Product;
 import com.swp391.backend.model.product.ProductService;
 import com.swp391.backend.model.productSale.ProductSale;
 import com.swp391.backend.model.productSale.ProductSaleService;
+import com.swp391.backend.model.province.Province;
+import com.swp391.backend.model.province.ProvinceService;
 import com.swp391.backend.model.receiveinfo.ReceiveInfo;
 import com.swp391.backend.model.receiveinfo.ReceiveInfoService;
 import com.swp391.backend.model.shop.Shop;
@@ -24,6 +28,8 @@ import com.swp391.backend.model.shop.ShopService;
 import com.swp391.backend.model.user.User;
 import com.swp391.backend.model.user.UserDTO;
 import com.swp391.backend.model.user.UserService;
+import com.swp391.backend.model.ward.Ward;
+import com.swp391.backend.model.ward.WardService;
 import com.swp391.backend.utils.json.JsonUtils;
 import com.swp391.backend.utils.storage.StorageService;
 
@@ -150,6 +156,9 @@ public class UserDetailController {
         return ResponseEntity.ok().headers(header).body(file);
     }
 
+    private final ProvinceService provinceService;
+    private final DistrictService districtService;
+    private final WardService wardService;
     @PostMapping("/info/receives")
     public ResponseEntity<ReceiveInfo> addReceiveInfo(@RequestBody ReceiveInfoRequest request) {
         User user = (User) authenticatedManager.getAuthenticatedUser();
@@ -158,12 +167,30 @@ public class UserDetailController {
             defaultInfo = true;
         }
 
+        Province pr = Province.builder()
+                .id(request.getProvinceId())
+                .name(request.getProvinceName())
+                .build();
+        Province province = provinceService.save(pr);
+
+        District dt = District.builder()
+                .id(request.getDistrictId())
+                .name(request.getDistrictName())
+                .build();
+        District district = districtService.save(dt);
+
+        Ward wd = Ward.builder()
+                .id(request.getWardId())
+                .name(request.getWardName())
+                .build();
+        Ward ward = wardService.save(wd);
+
         var receiveInfo = ReceiveInfo.builder()
                 .fullname(request.getFullname())
                 .phone(request.getPhone())
-                .province(request.getProvince())
-                .district(request.getDistrict())
-                .ward(request.getWard())
+                .province(province)
+                .district(district)
+                .ward(ward)
                 .specific_address(request.getSpecific_address())
                 ._default(defaultInfo)
                 .user(user)

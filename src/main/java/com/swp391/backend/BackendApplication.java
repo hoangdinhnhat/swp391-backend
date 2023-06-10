@@ -31,6 +31,7 @@ public class BackendApplication {
             storageService.init();
         };
     }
+
     @Bean
     CommandLineRunner initUser(UserService userService) {
         return (args) -> {

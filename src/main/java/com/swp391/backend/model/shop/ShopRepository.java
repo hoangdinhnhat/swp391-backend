@@ -4,17 +4,38 @@
  */
 package com.swp391.backend.model.shop;
 
+import com.swp391.backend.model.category.Category;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.PagingAndSortingRepository;
 
 import java.util.List;
 
 /**
- *
  * @author Lenovo
  */
-public interface ShopRepository extends PagingAndSortingRepository<Shop, Integer>, JpaRepository<Shop, Integer>{
+public interface ShopRepository extends PagingAndSortingRepository<Shop, Integer>, JpaRepository<Shop, Integer> {
     List<Shop> findByNameLike(String search, Pageable pageable);
+
     List<Shop> findByNameContainingIgnoreCase(String search, Pageable pageable);
+
+    @Query(
+            value = "select distinct s.id,\n" +
+                    "       s.followers,\n" +
+                    "       s.join_time,\n" +
+                    "       s.name,\n" +
+                    "       s.rating,\n" +
+                    "       s.shop_image,\n" +
+                    "       s.shop_addess_id\n" +
+                    "from shop s\n" +
+                    "inner join product p\n" +
+                    "on p.shop_id = s.id\n" +
+                    "inner join category_group cg\n" +
+                    "    on p.category_group_id = cg.id\n" +
+                    "where cg.category_id = ?1"
+            ,
+            nativeQuery = true
+    )
+    List<Shop> findByCategory(Integer categoryId, Pageable pageable);
 }
