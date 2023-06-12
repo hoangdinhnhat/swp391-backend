@@ -23,7 +23,7 @@ public class ReceiveInfoRequest {
     private String provinceName;
     private Integer districtId;
     private String districtName;
-    private Integer wardId;
+    private String wardId;
     private String wardName;
     private String specific_address;
     private boolean _default;

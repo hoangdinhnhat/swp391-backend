@@ -16,7 +16,7 @@ import java.util.List;
 @Entity
 public class Ward {
     @Id
-    private Integer id;
+    private String id;
     private String name;
 
     @OneToMany(mappedBy = "ward")
