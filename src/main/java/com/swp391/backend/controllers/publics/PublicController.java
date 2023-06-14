@@ -7,7 +7,9 @@ package com.swp391.backend.controllers.publics;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import com.google.gson.Gson;
 import com.swp391.backend.model.cart.Cart;
+import com.swp391.backend.model.cart.CartItem;
 import com.swp391.backend.model.cart.CartService;
 import com.swp391.backend.model.cartProduct.CartProduct;
 import com.swp391.backend.model.cartProduct.CartProductKey;
@@ -16,32 +18,47 @@ import com.swp391.backend.model.category.Category;
 import com.swp391.backend.model.category.CategoryDetails;
 import com.swp391.backend.model.category.CategoryRepository;
 import com.swp391.backend.model.category.CategoryService;
+import com.swp391.backend.model.categoryDetailInfo.CategoryDetailInfo;
 import com.swp391.backend.model.categoryDetailInfo.CategoryDetailInfoRepository;
 import com.swp391.backend.model.categoryDetailInfo.CategoryDetailInfoService;
 import com.swp391.backend.model.categoryGroup.CategoryGroup;
 import com.swp391.backend.model.categoryGroup.CategoryGroupService;
+import com.swp391.backend.model.district.District;
+import com.swp391.backend.model.district.DistrictService;
 import com.swp391.backend.model.product.Product;
 import com.swp391.backend.model.product.ProductDTO;
 import com.swp391.backend.model.product.ProductService;
 import com.swp391.backend.model.product.SearchDTO;
 import com.swp391.backend.model.productAttachWith.AttachWithService;
+import com.swp391.backend.model.productDetailInfo.ProductDetailInfo;
 import com.swp391.backend.model.productDetailInfo.ProductDetailInfoRepository;
+import com.swp391.backend.model.productDetailInfo.ProductDetailInfoService;
 import com.swp391.backend.model.productFeedback.Feedback;
 import com.swp391.backend.model.productFeedback.FeedbackService;
+import com.swp391.backend.model.productFeedbackImage.ProductFeedbackImage;
 import com.swp391.backend.model.productFeedbackImage.ProductFeedbackImageService;
+import com.swp391.backend.model.productImage.ProductImage;
+import com.swp391.backend.model.productImage.ProductImageServie;
 import com.swp391.backend.model.productSale.ProductSale;
 import com.swp391.backend.model.productSale.ProductSaleDTO;
 import com.swp391.backend.model.productSale.ProductSaleKey;
 import com.swp391.backend.model.productSale.ProductSaleService;
+import com.swp391.backend.model.province.Province;
+import com.swp391.backend.model.province.ProvinceService;
 import com.swp391.backend.model.saleEvent.SaleEvent;
 import com.swp391.backend.model.saleEvent.SaleEventService;
 import com.swp391.backend.model.shop.Shop;
 import com.swp391.backend.model.shop.ShopDTO;
 import com.swp391.backend.model.shop.ShopDetails;
 import com.swp391.backend.model.shop.ShopService;
+import com.swp391.backend.model.shopAddress.ShopAddress;
+import com.swp391.backend.model.shopAddress.ShopAddressService;
 import com.swp391.backend.model.user.User;
 import com.swp391.backend.model.user.UserService;
+import com.swp391.backend.model.ward.Ward;
+import com.swp391.backend.model.ward.WardService;
 import com.swp391.backend.utils.json.JsonUtils;
+import com.swp391.backend.utils.storage.ProductFeedbackImageStorageService;
 import com.swp391.backend.utils.storage.ProductImageStorageService;
 import com.swp391.backend.utils.storage.StorageService;
 import lombok.RequiredArgsConstructor;
@@ -67,20 +84,31 @@ public class PublicController {
     private final ShopService shopService;
     private final SaleEventService saleEventService;
     private final ProductSaleService productSaleService;
-    private final JsonUtils JSON;
     private final FeedbackService feedbackService;
     private final CategoryDetailInfoService categoryDetailInfoService;
+    private final UserService userService;
+    private final CategoryService categoryService;
+    private final ProductImageServie productImageServie;
+    private final ProductDetailInfoService productDetailInfoService;
+    private final ProductFeedbackImageService productFeedbackImageService;
+    private final ProvinceService provinceService;
+    private final DistrictService districtService;
+    private final WardService wardService;
+    private final ShopAddressService shopAddressService;
+
+    @Autowired
+    private Gson gsonUtils;
 
     @Autowired
     @Qualifier(value = "avatar")
     private StorageService storageService;
     @Autowired
     @Qualifier(value = "productImage")
-    private StorageService productImageService;
+    private StorageService productImageStorageService;
 
     @Autowired
     @Qualifier(value = "productVideo")
-    private StorageService productVideoService;
+    private StorageService productVideoStorageService;
 
     @Autowired
     @Qualifier(value = "productFeedbackVideo")
@@ -104,6 +132,66 @@ public class PublicController {
     @GetMapping("/time")
     public Date getTime() {
         return new Date();
+    }
+
+    @GetMapping("/category/{category_id}")
+    public CategoryDetails getCategory(@PathVariable("category_id") Integer category_id, @RequestParam("page") Optional<Integer> pageOpt, @RequestParam("filter") Optional<String> flt) {
+        Category category = categoryService.getById(category_id);
+        Integer page = pageOpt.orElse(1) - 1;
+        String filter = flt.orElse("default");
+        List<ProductSaleDTO> products = productService.getByCategory(category, page, filter).stream()
+                .map(it -> {
+                    var find = productSaleService.findProductInSale(it);
+                    if (find != null) {
+                        return find.toDto();
+                    } else {
+                        return ProductSaleDTO.builder()
+                                .product(it)
+                                .build();
+                    }
+                }).collect(Collectors.toList());
+
+        List<ShopDTO> shops = shopService.topThreeShopInCategory(category)
+                .stream()
+                .map(it -> it.toDto())
+                .collect(Collectors.toList());
+
+        int maxPage = productService.getMaxPage(category);
+
+        return CategoryDetails
+                .builder()
+                .shops(shops)
+                .ps(products)
+                .categoryName(category.getName())
+                .maxPage(maxPage)
+                .build();
+    }
+
+    @GetMapping("/category/category-group/{category_group_id}")
+    public List<ProductDTO> getCategoryGroup(@PathVariable("category_group_id") Integer category_group_id) {
+        var categoryGroup = categoryGroupService.getCategoryGroupById(category_group_id);
+        List<Product> products = categoryGroup.getProducts();
+
+        return products.stream().map(it -> {
+            ProductSaleDTO productSaleDto = null;
+
+            var productSale = productSaleService.findProductInSale(it);
+            if (productSale != null) {
+                productSaleDto = productSale.toDto();
+                productSaleDto.setProduct(null);
+            }
+
+            return ProductDTO.builder()
+                    .id(it.getId())
+                    .name(it.getName())
+                    .images(it.getImages())
+                    .categoryGroup(categoryGroup.toDTO())
+                    .price(it.getPrice())
+                    .rating(it.getRating())
+                    .sold(it.getSold())
+                    .productSale(productSaleDto)
+                    .build();
+        }).collect(Collectors.toList());
     }
 
     @GetMapping("/product/all")
@@ -185,68 +273,6 @@ public class PublicController {
         return ResponseEntity.ok().body(searchDTO);
     }
 
-    private final CategoryService categoryService;
-
-    @GetMapping("/category/{category_id}")
-    public CategoryDetails getCategory(@PathVariable("category_id") Integer category_id, @RequestParam("page") Optional<Integer> pageOpt, @RequestParam("filter") Optional<String> flt) {
-        Category category = categoryService.getById(category_id);
-        Integer page = pageOpt.orElse(1) - 1;
-        String filter = flt.orElse("default");
-        List<ProductSaleDTO> products = productService.getByCategory(category, page, filter).stream()
-                .map(it -> {
-                    var find = productSaleService.findProductInSale(it);
-                    if (find != null) {
-                        return find.toDto();
-                    } else {
-                        return ProductSaleDTO.builder()
-                                .product(it)
-                                .build();
-                    }
-                }).collect(Collectors.toList());
-
-        List<ShopDTO> shops = shopService.topThreeShopInCategory(category)
-                .stream()
-                .map(it -> it.toDto())
-                .collect(Collectors.toList());
-
-        int maxPage = productService.getMaxPage(category);
-
-        return CategoryDetails
-                .builder()
-                .shops(shops)
-                .ps(products)
-                .categoryName(category.getName())
-                .maxPage(maxPage)
-                .build();
-    }
-
-    @GetMapping("/category/category-group/{category_group_id}")
-    public List<ProductDTO> getCategoryGroup(@PathVariable("category_group_id") Integer category_group_id) {
-        var categoryGroup = categoryGroupService.getCategoryGroupById(category_group_id);
-        List<Product> products = categoryGroup.getProducts();
-
-        return products.stream().map(it -> {
-            ProductSaleDTO productSaleDto = null;
-
-            var productSale = productSaleService.findProductInSale(it);
-            if (productSale != null) {
-                productSaleDto = productSale.toDto();
-                productSaleDto.setProduct(null);
-            }
-
-            return ProductDTO.builder()
-                    .id(it.getId())
-                    .name(it.getName())
-                    .images(it.getImages())
-                    .categoryGroup(categoryGroup.toDTO())
-                    .price(it.getPrice())
-                    .rating(it.getRating())
-                    .sold(it.getSold())
-                    .productSale(productSaleDto)
-                    .build();
-        }).collect(Collectors.toList());
-    }
-
     @GetMapping("/product/{id}")
     public ResponseEntity<ProductDTO> productDetail(@PathVariable("id") Optional<Integer> id) {
         Integer pid = id.orElse(1);
@@ -290,34 +316,54 @@ public class PublicController {
         return ResponseEntity.ok().body(productDTO);
     }
 
-
     @PostMapping("/product/upload")
-    public ResponseEntity<Product> uploadProduct(@RequestBody ProductRequest request) {
+    public ResponseEntity<String> uploadProduct(@RequestParam("product") String jsonRequest,  @RequestParam("images") MultipartFile[] images, @RequestParam("video") MultipartFile video) {
+        var request = gsonUtils.fromJson(jsonRequest, ProductRequest.class);
         CategoryGroup group = categoryGroupService.getCategoryGroupById(request.getCategoryGroup());
-        var product = Product.builder()
+        var productRequest = Product.builder()
                 .name(request.getName())
                 .description(request.getDescription())
+                .video("/api/v1/publics/product/video/" + 80)
+                .uploadTime(new Date())
                 .price(request.getPrice())
                 .available(request.getAvailable())
-                .rating(request.getRating())
+                .shop(shopService.getShopById(1))
                 .categoryGroup(group)
                 .build();
-        productService.save(product);
-        return ResponseEntity.ok().body(product);
-    }
 
-    @GetMapping("/shop/image/{id}")
-    public ResponseEntity<Resource> getShopImage(@PathVariable("id") Integer id) {
-        Shop shop = shopService.getShopById(id);
-        if (shop != null) {
-            String image = "shop/" + shop.getId() + ".jpg";
-            Resource file = storageService.loadAsResource(image);
-            HttpHeaders header = new HttpHeaders();
-            header.set(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + file.getFilename() + "\"");
-            header.set(HttpHeaders.CONTENT_TYPE, "image/jpeg");
-            return ResponseEntity.ok().headers(header).body(file);
+        var product = productService.save(productRequest);
+
+        productVideoStorageService.store(video, product.getId() + ".mp4");
+
+        int count = 0;
+        var services = (ProductImageStorageService) productImageStorageService;
+        for(MultipartFile image : images)
+        {
+            count ++;
+            services.store(image, "" + product.getId(), count + ".jpg");
+            var pI = ProductImage.builder()
+                    .product(product)
+                    .url("/api/v1/publics/product/image/" + product.getId() + "?imgId=" + count)
+                    .build();
+            productImageServie.save(pI);
         }
-        return ResponseEntity.badRequest().build();
+
+        List<CategoryDetailInfo> categoryDetailInfos = categoryDetailInfoService.getByCategory(product.getCategoryGroup().getCategory());
+        categoryDetailInfos.forEach(it -> {
+            var productDetail = request.getProductDetailRequests()
+                    .stream()
+                    .filter(cc -> cc.getName().equalsIgnoreCase(it.getName()))
+                    .findFirst().orElse(null);
+
+            var pdi = ProductDetailInfo.builder()
+                    .categoryDetailInfo(it)
+                    .value(productDetail.getValue())
+                    .product(product)
+                    .build();
+            productDetailInfoService.save(pdi);
+        });
+
+        return ResponseEntity.ok().build();
     }
 
     @GetMapping("/product/image/{id}")
@@ -325,25 +371,11 @@ public class PublicController {
         Product product = productService.getProductById(id);
         if (product != null) {
             String image = product.getId() + "/" + imgId.orElse(1) + ".jpg";
-            Resource file = productImageService.loadAsResource(image);
+            Resource file = productImageStorageService.loadAsResource(image);
             HttpHeaders header = new HttpHeaders();
             header.set(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + file.getFilename() + "\"");
             header.set(HttpHeaders.CONTENT_TYPE, "image/jpeg");
             return ResponseEntity.ok().headers(header).body(file);
-        }
-        return ResponseEntity.badRequest().build();
-    }
-
-    @PostMapping("/product/image/{id}")
-    public ResponseEntity<String> uploadProductImage(@PathVariable("id") Integer id, @RequestParam("files") MultipartFile[] files) {
-        Product product = productService.getProductById(id);
-        if (product != null) {
-            var storage = (ProductImageStorageService) productImageService;
-            Arrays.stream(files).forEach(file -> {
-                int index = Arrays.stream(files).collect(Collectors.toList()).indexOf(file) + 1;
-                storage.store(file, product.getId() + "", index + ".jpg");
-            });
-            return ResponseEntity.ok().build();
         }
         return ResponseEntity.badRequest().build();
     }
@@ -353,7 +385,7 @@ public class PublicController {
         Product product = productService.getProductById(id);
         if (product != null) {
             String image = product.getId() + ".mp4";
-            Resource file = productVideoService.loadAsResource(image);
+            Resource file = productVideoStorageService.loadAsResource(image);
             HttpHeaders header = new HttpHeaders();
             header.set(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + file.getFilename() + "\"");
             header.set(HttpHeaders.CONTENT_TYPE, "video/mp4");
@@ -362,21 +394,48 @@ public class PublicController {
         return ResponseEntity.badRequest().build();
     }
 
-    @PostMapping("/product/video/{id}")
-    public ResponseEntity<String> uploadProductVideo(@PathVariable("id") Integer id, @RequestParam("files") MultipartFile file) {
-        Product product = productService.getProductById(id);
-        if (product != null) {
-            productVideoService.store(file, id + ".mp4");
-            return ResponseEntity.ok().build();
+    @PostMapping("/product/feedbacks/upload")
+    public ResponseEntity<String> uploadProductFeedback(@RequestParam("feedback") String jsonRequest,  @RequestParam("images") MultipartFile[] images, @RequestParam("video") MultipartFile video) {
+        var request = gsonUtils.fromJson(jsonRequest, FeedbackRequest.class);
+        var product = productService.getProductById(request.getProductId());
+        var user = (User) userService.loadUserByUsername(request.getUserId());
+
+        var feedbackRequest = Feedback.builder()
+                .rate(request.getRate())
+                .time(request.getTime())
+                .description(request.getDescription())
+                .videoUrl("/api/v1/publics/product/feedbacks/video/1")
+                .product(product)
+                .user(user)
+                .build();
+
+        var feedback = feedbackService.save(feedbackRequest);
+        feedback.setVideoUrl("/api/v1/publics/product/feedbacks/video/" + feedback.getId());
+        feedback = feedbackService.save(feedback);
+
+        productFeedbackVideoStorageService.store(video, feedback.getId() + ".mp4");
+
+        int count = 0;
+        var services = (ProductFeedbackImageStorageService) productFeedbackImageStorageService;
+        for(MultipartFile image : images)
+        {
+            count ++;
+            services.store(image, feedback.getId().toString(), count + ".jpg");
+            var pFI = ProductFeedbackImage.builder()
+                    .feedback(feedback)
+                    .url("/api/v1/publics/product/feedbacks/image/" + feedback.getId() + "?imgId=" + count)
+                    .build();
+            productFeedbackImageService.save(pFI);
         }
-        return ResponseEntity.badRequest().build();
+
+        return ResponseEntity.ok().build();
     }
 
     @GetMapping("/product/feedbacks/video/{feedback_id}")
     public ResponseEntity<Resource> getProductFeedbackVideo(@PathVariable("feedback_id") Integer feedbackId) {
         Feedback feedback = feedbackService.getById(feedbackId);
         if (feedback != null) {
-            String video = feedback.getId() + "/" + feedback.getId() + ".mp4";
+            String video = feedback.getId() + ".mp4";
             Resource file = productFeedbackVideoStorageService.loadAsResource(video);
             HttpHeaders header = new HttpHeaders();
             header.set(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + file.getFilename() + "\"");
@@ -400,6 +459,47 @@ public class PublicController {
         return ResponseEntity.badRequest().build();
     }
 
+    @PostMapping("/shop/create")
+    public Shop createShop(@RequestParam("shop") String jsonRequest,  @RequestParam("images") MultipartFile[] images)
+    {
+        var request = gsonUtils.fromJson(jsonRequest, ShopRequest.class);
+
+        Province pr = Province.builder()
+                .id(request.getProvinceId())
+                .name(request.getProvinceName())
+                .build();
+        Province province = provinceService.save(pr);
+
+        District dt = District.builder()
+                .id(request.getDistrictId())
+                .name(request.getDistrictName())
+                .build();
+        District district = districtService.save(dt);
+
+        Ward wd = Ward.builder()
+                .id(request.getWardId())
+                .name(request.getWardName())
+                .build();
+        Ward ward = wardService.save(wd);
+
+        ShopAddress shopAddress = ShopAddress.builder()
+                .province(province)
+                .district(district)
+                .ward(ward)
+                .specificAddress(request.getSpecific_address())
+                .build();
+        shopAddressService.save(shopAddress);
+
+        Shop shopRequest = Shop.builder()
+                .name(request.getName())
+                .shopImage("/api/v1/publics/shop/image/-1")
+                .shopAddress(shopAddress)
+                .joinTime(new Date())
+                .build();
+
+        return shopService.save(shopRequest);
+    }
+
     @GetMapping("/shop/{id}")
     public ShopDetails shopDetail(
             @PathVariable("id") Optional<Integer> id,
@@ -419,6 +519,27 @@ public class PublicController {
                 .maxPage(maxPage)
                 .products(products)
                 .build();
+    }
+
+    @GetMapping("/shop/image/{id}")
+    public ResponseEntity<Resource> getShopImage(@PathVariable("id") Integer id) {
+        Shop shop = shopService.getShopById(id);
+        if (shop != null) {
+            String image = "shop/" + shop.getId() + ".jpg";
+            Resource file = storageService.loadAsResource(image);
+            HttpHeaders header = new HttpHeaders();
+            header.set(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + file.getFilename() + "\"");
+            header.set(HttpHeaders.CONTENT_TYPE, "image/jpeg");
+            return ResponseEntity.ok().headers(header).body(file);
+        }else
+        {
+            String image = "shop/default.jpg";
+            Resource file = storageService.loadAsResource(image);
+            HttpHeaders header = new HttpHeaders();
+            header.set(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + file.getFilename() + "\"");
+            header.set(HttpHeaders.CONTENT_TYPE, "image/jpeg");
+            return ResponseEntity.ok().headers(header).body(file);
+        }
     }
 
     @GetMapping("/shop/trending")
@@ -472,82 +593,9 @@ public class PublicController {
                 .collect(Collectors.toList());
     }
 
-    private final CartProductService cartProductService;
-    private final CartService cartService;
-    private final UserService userService;
+    @PostMapping("/order/create")
+    public void createOrder(@RequestBody List<CartItem> cartItems)
+    {
 
-    @GetMapping("/cart")
-    public HashMap<String, List<CartProduct>> getCart() {
-        User user = (User) userService.loadUserByUsername("motajil610@rockdian.com");
-        Cart cart = user.getCart();
-        HashMap<String, List<CartProduct>> mapper = new HashMap<>();
-        cartProductService.getCartProductByCart(cart, 1)
-                .forEach(i -> {
-                    Integer shopId = i.getProduct().getShop().getId();
-                    Shop shop = shopService.getShopById(shopId);
-                    String shopJson = JSON.stringify(shop.toDto());
-                    if (mapper.get(shopJson) == null) {
-                        List<CartProduct> products = new ArrayList<>();
-                        products.add(i);
-                        mapper.put(shopJson, products);
-                    } else {
-                        List<CartProduct> products = mapper.get(shopJson);
-                        products.add(i);
-                        mapper.put(shopJson, products);
-                    }
-                });
-        return mapper;
     }
-
-    @GetMapping("/cart/{product_id}")
-    public ResponseEntity<String> addProductToCart(@PathVariable("product_id") Integer product_id, @RequestParam("quantity") Optional<Integer> quan) {
-        User user = (User) userService.loadUserByUsername("vuducthien@gmail.com");
-        Cart cart = user.getCart();
-        Integer quantity = quan.orElse(1);
-        if (cart == null) {
-            cart = new Cart();
-            cartService.save(cart);
-            user.setCart(cart);
-            userService.save(user);
-        }
-        Product product = productService.getProductById(product_id);
-        CartProduct findedCartProduct = cartProductService.findByCartAndProduct(cart, product);
-
-        if (findedCartProduct != null) {
-            quantity += findedCartProduct.getQuantity();
-        }
-
-        CartProductKey id = new CartProductKey();
-        id.cartId = cart.getId();
-        id.productId = product.getId();
-
-        var cartProduct = CartProduct.builder()
-                .product(product)
-                .id(id)
-                .cart(cart)
-                .quantity(quantity)
-                .build();
-
-        cartProductService.save(cartProduct);
-        return ResponseEntity.ok("OK");
-    }
-
-    @GetMapping("/cart/delete/{product_id}")
-    public ResponseEntity<String> delete(@PathVariable("product_id") Integer product_id) {
-        User user = (User) userService.loadUserByUsername("vuducthien@gmail.com");
-        Cart cart = user.getCart();
-        if (cart == null) {
-            return ResponseEntity.badRequest().build();
-        }
-
-        Product product = productService.getProductById(product_id);
-
-        CartProductKey id = new CartProductKey();
-        id.cartId = cart.getId();
-        id.productId = product.getId();
-
-        cartProductService.delete(id);
-        return ResponseEntity.ok("OK");
-    }
-
 }

@@ -36,7 +36,6 @@ public class ProductService {
     private final CategoryGroupService categoryGroupService;
     private final ShopService shopService;
     private final UserService userService;
-    private final PasswordEncoder passwordEncoder;
     private final FeedbackService feedbackService;
     private final ProductFeedbackImageService productFeedbackImageService;
     private final ProductDetailInfoService productDetailInfoService;
@@ -192,6 +191,7 @@ public class ProductService {
                     .categoryGroup(categoryGroupService.getCategoryGroupById(1))
                     .shop(shopService.getShopById(1))
                     .video("/api/v1/publics/product/video/" + 1)
+                    .uploadTime(new Date())
                     .description(des)
                     .available(20)
                     .price(price)
@@ -249,6 +249,28 @@ public class ProductService {
                     .build();
             productFeedbackImageService.save(pfi);
             productFeedbackImageService.save(pfi2);
+
+            var feedback2 = Feedback.builder()
+                    .rate(4)
+                    .time(new Date())
+                    .description("Pretty Fine")
+                    .videoUrl("/api/v1/publics/product/feedbacks/video/1")
+                    .product(product1)
+                    .user((User) userService.loadUserByUsername("tranthienthanhbao@gmail.com"))
+                    .build();
+
+            feedbackService.save(feedback2);
+
+            var pfi1 = ProductFeedbackImage.builder()
+                    .url("/api/v1/publics/product/feedbacks/image/" + 1 + "?imgId=1")
+                    .feedback(feedback2)
+                    .build();
+            var pfi22 = ProductFeedbackImage.builder()
+                    .url("/api/v1/publics/product/feedbacks/image/" + 1 + "?imgId=2")
+                    .feedback(feedback2)
+                    .build();
+            productFeedbackImageService.save(pfi1);
+            productFeedbackImageService.save(pfi22);
         }
         for (int i = 20; i < 40; i++) {
             double price = Math.round(Math.random() * 999 + 1000);
@@ -257,6 +279,7 @@ public class ProductService {
                     .categoryGroup(categoryGroupService.getCategoryGroupById(3))
                     .shop(shopService.getShopById(2))
                     .video("/api/v1/publics/product/video/" + 1)
+                    .uploadTime(new Date())
                     .description(des)
                     .available(20)
                     .price(price)
@@ -321,6 +344,7 @@ public class ProductService {
                     .name("African bird's cage")
                     .categoryGroup(categoryGroupService.getCategoryGroupById(4))
                     .shop(shopService.getShopById(3))
+                    .uploadTime(new Date())
                     .description(des)
                     .available(20)
                     .price(price)
@@ -385,6 +409,7 @@ public class ProductService {
                     .name("African bird's accessories")
                     .categoryGroup(categoryGroupService.getCategoryGroupById(4))
                     .shop(shopService.getShopById(3))
+                    .uploadTime(new Date())
                     .description(des)
                     .available(20)
                     .price(price)

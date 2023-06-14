@@ -8,4 +8,9 @@ import org.springframework.stereotype.Service;
 public class ShopAddressService {
 
     private final ShopAddressRepository shopAddressRepository;
+
+    public ShopAddress save(ShopAddress shopAddress)
+    {
+        return shopAddressRepository.save(shopAddress);
+    }
 }

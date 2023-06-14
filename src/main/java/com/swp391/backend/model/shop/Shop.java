@@ -10,6 +10,7 @@ import com.swp391.backend.model.cart.Cart;
 import com.swp391.backend.model.category.Category;
 import com.swp391.backend.model.product.Product;
 import com.swp391.backend.model.shopAddress.ShopAddress;
+import com.swp391.backend.model.subscription.Subscription;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
@@ -38,15 +39,19 @@ public class Shop {
     private double rating;
     private Date joinTime;
     private String shopImage;
-    private int followers;
     
     @OneToMany(mappedBy = "shop")
     @JsonManagedReference
     List<Product> products;
 
-    @OneToOne(cascade = CascadeType.ALL)
-    @JoinColumn(name = "shop_addess_id", referencedColumnName = "id")
+    @ManyToOne
+    @JoinColumn(name = "shop_address_id")
+    @JsonManagedReference
     private ShopAddress shopAddress;
+
+    @OneToMany(mappedBy = "shop")
+    @JsonManagedReference
+    List<Subscription> subscriptions;
 
     public double getRating()
     {
@@ -72,6 +77,7 @@ public class Shop {
                 .products(products.size())
                 .address(shopAddress)
                 .rating(rating)
+                .followers(subscriptions.size())
                 .joinTime(joinTime)
                 .build();
     }

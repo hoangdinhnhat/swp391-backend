@@ -9,6 +9,7 @@ import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.swp391.backend.model.cart.Cart;
 import com.swp391.backend.model.productFeedback.Feedback;
 import com.swp391.backend.model.receiveinfo.ReceiveInfo;
+import com.swp391.backend.model.subscription.Subscription;
 import com.swp391.backend.model.token.Token;
 import jakarta.persistence.*;
 
@@ -70,6 +71,10 @@ public class User implements UserDetails{
     private Cart cart;
     
     private int wrongpasswordcounter = 0;
+
+    @OneToMany(mappedBy = "user")
+    @JsonManagedReference
+    List<Subscription> subscriptions;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

@@ -80,6 +80,9 @@ public class UserDetailController {
     private final ShopService shopService;
     private final JsonUtils JSON;
     private final ProductSaleService productSaleService;
+    private final ProvinceService provinceService;
+    private final DistrictService districtService;
+    private final WardService wardService;
 
 //    @GetMapping("/{email}")
 //    @PreAuthorize("#email == authentication.principal.username")
@@ -156,9 +159,6 @@ public class UserDetailController {
         return ResponseEntity.ok().headers(header).body(file);
     }
 
-    private final ProvinceService provinceService;
-    private final DistrictService districtService;
-    private final WardService wardService;
     @PostMapping("/info/receives")
     public ResponseEntity<ReceiveInfo> addReceiveInfo(@RequestBody ReceiveInfoRequest request) {
         User user = (User) authenticatedManager.getAuthenticatedUser();

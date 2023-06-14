@@ -7,6 +7,7 @@ import com.swp391.backend.model.product.ProductService;
 import com.swp391.backend.model.productAttachWith.AttachWithService;
 import com.swp391.backend.model.saleEvent.SaleEventService;
 import com.swp391.backend.model.shop.ShopService;
+import com.swp391.backend.model.subscription.SubscriptionService;
 import com.swp391.backend.model.user.UserService;
 import com.swp391.backend.utils.storage.ProductVideoService;
 import com.swp391.backend.utils.storage.StorageProperties;
@@ -87,4 +88,12 @@ public class BackendApplication {
             saleEventService.init();
         };
     }
+
+    @Bean
+    CommandLineRunner init8(SubscriptionService subscriptionService) {
+        return (args) -> {
+            subscriptionService.init();
+        };
+    }
+
 }

@@ -90,6 +90,7 @@ public interface ProductRepository extends PagingAndSortingRepository<Product, I
                     "       p.name, \n" +
                     "       p.price, \n" +
                     "       p.rating, \n" +
+                    "       p.upload_time, \n" +
                     "       p.sold, \n" +
                     "       p.video, \n" +
                     "       p.category_group_id, \n" +
@@ -108,6 +109,7 @@ public interface ProductRepository extends PagingAndSortingRepository<Product, I
                     "       p.name, \n" +
                     "       p.price, \n" +
                     "       p.rating, \n" +
+                    "       p.upload_time, \n" +
                     "       p.sold, \n" +
                     "       p.video, \n" +
                     "       p.category_group_id, \n" +

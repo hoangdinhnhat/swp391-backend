@@ -1,5 +1,6 @@
 package com.swp391.backend.model.shopAddress;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.swp391.backend.model.district.District;
 import com.swp391.backend.model.province.Province;
@@ -8,6 +9,8 @@ import com.swp391.backend.model.user.User;
 import com.swp391.backend.model.ward.Ward;
 import jakarta.persistence.*;
 import lombok.*;
+
+import java.util.List;
 
 @Getter
 @Setter
@@ -38,6 +41,7 @@ public class ShopAddress {
 
     private String specificAddress;
 
-    @OneToOne(mappedBy = "shopAddress")
-    private Shop shop;
+    @OneToMany
+    @JsonBackReference
+    private List<Shop> shops;
 }

@@ -8,6 +8,7 @@ import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.swp391.backend.model.cartProduct.CartProduct;
 import com.swp391.backend.model.categoryGroup.CategoryGroup;
+import com.swp391.backend.model.orderDetails.OrderDetails;
 import com.swp391.backend.model.productDetailInfo.ProductDetailInfo;
 import com.swp391.backend.model.productFeedback.Feedback;
 import com.swp391.backend.model.productImage.ProductImage;
@@ -15,6 +16,7 @@ import com.swp391.backend.model.productSale.ProductSale;
 import com.swp391.backend.model.shop.Shop;
 import jakarta.persistence.*;
 
+import java.util.Date;
 import java.util.List;
 
 import jakarta.transaction.Transactional;
@@ -31,7 +33,6 @@ import lombok.*;
 @AllArgsConstructor
 @Entity
 @Table(name = "product")
-
 public class Product {
     @Id
     @GeneratedValue
@@ -49,6 +50,7 @@ public class Product {
     private List<ProductImage> images;
     private String video;
     private double rating;
+    private Date uploadTime;
 
     @ManyToOne
     @JoinColumn(name = "category_group_id")
@@ -75,6 +77,10 @@ public class Product {
     @JoinColumn(name = "shop_id")
     @JsonBackReference
     private Shop shop;
+
+    @OneToMany(mappedBy = "product")
+    @JsonManagedReference
+    private List<OrderDetails> orderDetails;
 
     public double getRating()
     {

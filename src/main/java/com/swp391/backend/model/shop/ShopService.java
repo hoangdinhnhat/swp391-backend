@@ -1,8 +1,14 @@
 package com.swp391.backend.model.shop;
 
 import com.swp391.backend.model.category.Category;
+import com.swp391.backend.model.district.District;
+import com.swp391.backend.model.district.DistrictService;
 import com.swp391.backend.model.province.Province;
+import com.swp391.backend.model.province.ProvinceService;
 import com.swp391.backend.model.shopAddress.ShopAddress;
+import com.swp391.backend.model.shopAddress.ShopAddressService;
+import com.swp391.backend.model.ward.Ward;
+import com.swp391.backend.model.ward.WardService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -16,6 +22,10 @@ import java.util.List;
 @RequiredArgsConstructor
 public class ShopService {
     private final ShopRepository shopRepository;
+    private final ShopAddressService shopAddressService;
+    private final ProvinceService provinceService;
+    private final DistrictService districtService;
+    private final WardService wardService;
 
     public Shop save(Shop shop) {
         return shopRepository.save(shop);
@@ -49,9 +59,39 @@ public class ShopService {
     }
 
     public void init() {
+
+        Province province = Province.builder()
+                .id(201)
+                .name("Hà Nội")
+                .build();
+        provinceService.save(province);
+
+        District district = District.builder()
+                .id(1489)
+                .name("Quận Hoàn Kiếm")
+                .build();
+        districtService.save(district);
+
+        Ward ward = Ward.builder()
+                .id("1A0218")
+                .name("Phường Tràng Tiền")
+                .build();
+        wardService.save(ward);
+
+        String specificAddress = "Số 302";
+
+        ShopAddress shopAddress = ShopAddress.builder()
+                .province(province)
+                .district(district)
+                .ward(ward)
+                .specificAddress(specificAddress)
+                .build();
+        shopAddressService.save(shopAddress);
+
         Shop shop = Shop.builder()
                 .name("Adidas's Bird")
                 .shopImage("/api/v1/publics/shop/image/1")
+                .shopAddress(shopAddress)
                 .joinTime(new Date())
                 .build();
         save(shop);
@@ -59,6 +99,7 @@ public class ShopService {
         shop = Shop.builder()
                 .name("Nike's Bird Food")
                 .shopImage("/api/v1/publics/shop/image/2")
+                .shopAddress(shopAddress)
                 .joinTime(new Date())
                 .build();
         save(shop);
@@ -66,6 +107,7 @@ public class ShopService {
         shop = Shop.builder()
                 .name("Louis Vuitton's Bird Cage And Bird Accessories")
                 .shopImage("/api/v1/publics/shop/image/3")
+                .shopAddress(shopAddress)
                 .joinTime(new Date())
                 .build();
         save(shop);

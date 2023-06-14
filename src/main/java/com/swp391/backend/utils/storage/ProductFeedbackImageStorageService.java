@@ -54,7 +54,7 @@ public class ProductFeedbackImageStorageService implements StorageService{
     public void store(MultipartFile file, String folder, String expectedName)
     {
         try {
-            String root = storageProperties.getProductImageLocation();
+            String root = storageProperties.getProductFeedbackImageLocation();
             String newFolder = root + "/" + folder;
             Path path = Paths.get(newFolder);
             if(!Files.exists(path))
