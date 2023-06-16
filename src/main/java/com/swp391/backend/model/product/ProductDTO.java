@@ -38,4 +38,5 @@ public class ProductDTO {
     private List<ProductDetailInfo> productDetailInfos;
     private ShopDTO shop;
     private List<Product> attachWiths;
+    private List<Product> relatedTo;
 }

@@ -10,6 +10,8 @@ import com.swp391.backend.model.productFeedback.Feedback;
 import com.swp391.backend.model.productFeedback.FeedbackService;
 import com.swp391.backend.model.productFeedbackImage.ProductFeedbackImage;
 import com.swp391.backend.model.productFeedbackImage.ProductFeedbackImageService;
+import com.swp391.backend.model.productFeedbackReply.FeedbackReply;
+import com.swp391.backend.model.productFeedbackReply.FeedbackReplyService;
 import com.swp391.backend.model.productImage.ProductImage;
 import com.swp391.backend.model.productImage.ProductImageServie;
 import com.swp391.backend.model.receiveinfo.ReceiveInfo;
@@ -41,22 +43,20 @@ public class ProductService {
     private final ProductDetailInfoService productDetailInfoService;
     private final CategoryDetailInfoService categoryDetailInfoService;
     private final ProductImageServie productImageService;
+    private final FeedbackReplyService feedbackReplyService;
 
     public List<Product> getAllProduct() {
         return productRepository.findAll(Sort.by("sold").descending());
     }
 
-    public List<Product> getSoldTopTenProduct()
-    {
+    public List<Product> getSoldTopTenProduct() {
         Pageable pageable = PageRequest.of(0, 10, Sort.by("sold").descending().and(Sort.by("rating").descending()));
         return productRepository.findAll(pageable).getContent();
     }
 
-    public List<Product> getByShop(Shop shop, Integer page, String filter)
-    {
+    public List<Product> getByShop(Shop shop, Integer page, String filter) {
         Pageable pageable = null;
-        switch (filter)
-        {
+        switch (filter) {
             case "top sales":
                 pageable = PageRequest.of(page, 40, Sort.by("sold").descending());
                 break;
@@ -102,8 +102,7 @@ public class ProductService {
 
     public List<Product> searchProduct(String search, Integer page, String filter) {
         Pageable pageable = null;
-        switch (filter)
-        {
+        switch (filter) {
             case "top sales":
                 pageable = PageRequest.of(page, 40, Sort.by("sold").descending());
                 break;
@@ -126,25 +125,23 @@ public class ProductService {
         return productRepository.save(product);
     }
 
-    public List<Product> getByCategory(Category category, Integer page, String filter)
-    {
+    public List<Product> getByCategory(Category category, Integer page, String filter, Integer numOfItem) {
         Pageable pageable = null;
-        switch (filter)
-        {
+        switch (filter) {
             case "top sales":
-                pageable = PageRequest.of(page, 40, Sort.by("sold").descending());
+                pageable = PageRequest.of(page, numOfItem, Sort.by("sold").descending());
                 break;
             case "ratings":
-                pageable = PageRequest.of(page, 40, Sort.by("rating").descending());
+                pageable = PageRequest.of(page, numOfItem, Sort.by("rating").descending());
                 break;
             case "low to high":
-                pageable = PageRequest.of(page, 40, Sort.by("price").ascending());
+                pageable = PageRequest.of(page, numOfItem, Sort.by("price").ascending());
                 break;
             case "high to low":
-                pageable = PageRequest.of(page, 40, Sort.by("price").descending());
+                pageable = PageRequest.of(page, numOfItem, Sort.by("price").descending());
                 break;
             default:
-                pageable = PageRequest.of(page, 40, Sort.by("sold").descending().and(Sort.by("rating").descending()));
+                pageable = PageRequest.of(page, numOfItem, Sort.by("sold").descending().and(Sort.by("rating").descending()));
         }
         return productRepository.findByCategory(category.getId(), pageable);
     }
@@ -250,6 +247,13 @@ public class ProductService {
             productFeedbackImageService.save(pfi);
             productFeedbackImageService.save(pfi2);
 
+            var feedbackRep = FeedbackReply.builder()
+                    .feedback(feedback1)
+                    .content("We would like to thank our users for their continued support of our product. We are always working to improve the product, and we appreciate your feedback. We know that there are still some features that are missing, and we are sorry for any inconvenience this may cause. We are working hard to add these features as soon as possible.")
+                    .build();
+
+            feedbackReplyService.save(feedbackRep);
+
             var feedback2 = Feedback.builder()
                     .rate(4)
                     .time(new Date())
@@ -271,6 +275,13 @@ public class ProductService {
                     .build();
             productFeedbackImageService.save(pfi1);
             productFeedbackImageService.save(pfi22);
+
+            var feedbackRep2 = FeedbackReply.builder()
+                    .feedback(feedback2)
+                    .content("We would like to thank our users for their continued support of our product. We are always working to improve the product, and we appreciate your feedback. We know that there are still some features that are missing, and we are sorry for any inconvenience this may cause. We are working hard to add these features as soon as possible.")
+                    .build();
+
+            feedbackReplyService.save(feedbackRep2);
         }
         for (int i = 20; i < 40; i++) {
             double price = Math.round(Math.random() * 999 + 1000);
@@ -448,8 +459,7 @@ public class ProductService {
 
             Feedback feedback1 = null;
             float rd = Math.round(Math.random());
-            if(rd == 0)
-            {
+            if (rd == 0) {
                 feedback1 = Feedback.builder()
                         .rate(4)
                         .time(new Date())
@@ -458,8 +468,7 @@ public class ProductService {
                         .product(product1)
                         .user((User) userService.loadUserByUsername("tranthienthanhbao@gmail.com"))
                         .build();
-            }else
-            {
+            } else {
                 feedback1 = Feedback.builder()
                         .rate(1)
                         .time(new Date())

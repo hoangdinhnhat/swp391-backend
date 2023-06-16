@@ -3,6 +3,7 @@ package com.swp391.backend;
 import com.swp391.backend.model.category.CategoryService;
 import com.swp391.backend.model.categoryDetailInfo.CategoryDetailInfoService;
 import com.swp391.backend.model.categoryGroup.CategoryGroupService;
+import com.swp391.backend.model.order.OrderService;
 import com.swp391.backend.model.product.ProductService;
 import com.swp391.backend.model.productAttachWith.AttachWithService;
 import com.swp391.backend.model.saleEvent.SaleEventService;
@@ -96,4 +97,10 @@ public class BackendApplication {
         };
     }
 
+    @Bean
+    CommandLineRunner init9(OrderService orderService) {
+        return (args) -> {
+            orderService.init();
+        };
+    }
 }

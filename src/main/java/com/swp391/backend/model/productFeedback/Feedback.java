@@ -4,12 +4,11 @@ import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.swp391.backend.model.product.Product;
 import com.swp391.backend.model.productFeedbackImage.ProductFeedbackImage;
-import com.swp391.backend.model.productImage.ProductImage;
+import com.swp391.backend.model.productFeedbackReply.FeedbackReply;
 import com.swp391.backend.model.user.User;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.LocalDateTime;
 import java.util.Date;
 import java.util.List;
 
@@ -29,7 +28,10 @@ public class Feedback {
     private User user;
     private Date time;
     private Integer rate;
+
+    @Column(columnDefinition="TEXT")
     private String description;
+
     private String videoUrl;
 
     @OneToMany(mappedBy = "feedback")
@@ -41,6 +43,10 @@ public class Feedback {
     @JsonBackReference
     private Product product;
 
+    @OneToMany(mappedBy = "feedback")
+    @JsonManagedReference
+    private List<FeedbackReply> feedbackReplies;
+
     public FeedbackDTO toDto() {
         return FeedbackDTO.builder()
                 .userName(user.getFirstname() + " " + user.getLastname())
@@ -50,6 +56,7 @@ public class Feedback {
                 .description(description)
                 .videoUrl(videoUrl)
                 .images(images)
+                .feedbackReplies(feedbackReplies)
                 .build();
     }
 }

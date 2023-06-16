@@ -9,6 +9,8 @@ import com.swp391.backend.model.user.User;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.Date;
+
 @Getter
 @Setter
 @Builder
@@ -32,5 +34,5 @@ public class Subscription {
     @JsonBackReference
     private User user;
 
-
+    private Date subscriptionTime;
 }

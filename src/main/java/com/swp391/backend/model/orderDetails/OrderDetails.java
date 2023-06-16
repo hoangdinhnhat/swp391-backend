@@ -30,4 +30,6 @@ public class OrderDetails {
     @JoinColumn(name = "product_id")
     @JsonBackReference
     private Product product;
+
+    private Integer quantity;
 }

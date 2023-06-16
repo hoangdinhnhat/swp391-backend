@@ -25,6 +25,9 @@ import com.swp391.backend.model.receiveinfo.ReceiveInfoService;
 import com.swp391.backend.model.shop.Shop;
 import com.swp391.backend.model.shop.ShopDTO;
 import com.swp391.backend.model.shop.ShopService;
+import com.swp391.backend.model.subscription.Subscription;
+import com.swp391.backend.model.subscription.SubscriptionId;
+import com.swp391.backend.model.subscription.SubscriptionService;
 import com.swp391.backend.model.user.User;
 import com.swp391.backend.model.user.UserDTO;
 import com.swp391.backend.model.user.UserService;
@@ -78,11 +81,11 @@ public class UserDetailController {
     private final CartService cartService;
     private final ProductService productService;
     private final ShopService shopService;
-    private final JsonUtils JSON;
     private final ProductSaleService productSaleService;
     private final ProvinceService provinceService;
     private final DistrictService districtService;
     private final WardService wardService;
+    private final SubscriptionService subscriptionService;
 
 //    @GetMapping("/{email}")
 //    @PreAuthorize("#email == authentication.principal.username")
@@ -225,6 +228,28 @@ public class UserDetailController {
     public ResponseEntity<String> deleteReceiveInfo(@PathVariable("delete_id") Integer id) {
         receiveInfoService.deleteReceiveInfo(id);
         return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/subscription/{shop_id}")
+    public ResponseEntity<Subscription> subscribeShop(@PathVariable("shop_id") Integer shopId)
+    {
+        User user = (User) authenticatedManager.getAuthenticatedUser();
+        Shop shop = shopService.getShopById(shopId);
+
+        if (shop == null) return ResponseEntity.badRequest().build();
+
+        SubscriptionId id = new SubscriptionId();
+        id.setShopId(shop.getId());
+        id.setUserId(user.getId());
+
+        Subscription subscription = Subscription.builder()
+                .id(id)
+                .shop(shop)
+                .user(user)
+                .build();
+        subscription = subscriptionService.save(subscription);
+
+        return ResponseEntity.ok().body(subscription);
     }
 
     @GetMapping("/cart")

@@ -12,7 +12,7 @@ import java.io.Serializable;
 public class OrderDetailsId implements Serializable {
 
     @Column(name = "order_id")
-    Integer orderId;
+    String orderId;
 
     @Column(name = "product_id")
     Integer productId;
@@ -22,7 +22,7 @@ public class OrderDetailsId implements Serializable {
         if (this == o) return true;
         if (!(o instanceof OrderDetailsId)) return false;
         OrderDetailsId that = (OrderDetailsId) o;
-        return orderId == that.orderId &&
+        return orderId.equals(that.orderId) &&
                 productId == that.productId;
     }
 

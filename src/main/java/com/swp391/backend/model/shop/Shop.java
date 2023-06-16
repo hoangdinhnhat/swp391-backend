@@ -8,6 +8,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.swp391.backend.model.cart.Cart;
 import com.swp391.backend.model.category.Category;
+import com.swp391.backend.model.order.Order;
 import com.swp391.backend.model.product.Product;
 import com.swp391.backend.model.shopAddress.ShopAddress;
 import com.swp391.backend.model.subscription.Subscription;
@@ -51,7 +52,11 @@ public class Shop {
 
     @OneToMany(mappedBy = "shop")
     @JsonManagedReference
-    List<Subscription> subscriptions;
+    private List<Subscription> subscriptions;
+
+    @OneToMany(mappedBy = "shop")
+    @JsonManagedReference
+    private List<Order> orders;
 
     public double getRating()
     {

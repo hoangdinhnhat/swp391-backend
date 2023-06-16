@@ -7,6 +7,7 @@ package com.swp391.backend.model.user;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.swp391.backend.model.cart.Cart;
+import com.swp391.backend.model.notification.Notification;
 import com.swp391.backend.model.productFeedback.Feedback;
 import com.swp391.backend.model.receiveinfo.ReceiveInfo;
 import com.swp391.backend.model.subscription.Subscription;
@@ -75,6 +76,10 @@ public class User implements UserDetails{
     @OneToMany(mappedBy = "user")
     @JsonManagedReference
     List<Subscription> subscriptions;
+
+    @OneToMany(mappedBy = "user")
+    @JsonManagedReference
+    List<Notification> notifications;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

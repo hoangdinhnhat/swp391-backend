@@ -4,6 +4,7 @@
  */
 package com.swp391.backend.controllers.publics;
 
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -25,6 +26,12 @@ import com.swp391.backend.model.categoryGroup.CategoryGroup;
 import com.swp391.backend.model.categoryGroup.CategoryGroupService;
 import com.swp391.backend.model.district.District;
 import com.swp391.backend.model.district.DistrictService;
+import com.swp391.backend.model.notification.Notification;
+import com.swp391.backend.model.notification.NotificationService;
+import com.swp391.backend.model.order.Order;
+import com.swp391.backend.model.order.OrderService;
+import com.swp391.backend.model.orderDetails.OrderDetails;
+import com.swp391.backend.model.orderDetails.OrderDetailsId;
 import com.swp391.backend.model.product.Product;
 import com.swp391.backend.model.product.ProductDTO;
 import com.swp391.backend.model.product.ProductService;
@@ -53,6 +60,9 @@ import com.swp391.backend.model.shop.ShopDetails;
 import com.swp391.backend.model.shop.ShopService;
 import com.swp391.backend.model.shopAddress.ShopAddress;
 import com.swp391.backend.model.shopAddress.ShopAddressService;
+import com.swp391.backend.model.subscription.Subscription;
+import com.swp391.backend.model.subscription.SubscriptionId;
+import com.swp391.backend.model.subscription.SubscriptionService;
 import com.swp391.backend.model.user.User;
 import com.swp391.backend.model.user.UserService;
 import com.swp391.backend.model.ward.Ward;
@@ -62,6 +72,8 @@ import com.swp391.backend.utils.storage.ProductFeedbackImageStorageService;
 import com.swp391.backend.utils.storage.ProductImageStorageService;
 import com.swp391.backend.utils.storage.StorageService;
 import lombok.RequiredArgsConstructor;
+import org.aspectj.weaver.ast.Not;
+import org.aspectj.weaver.ast.Or;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.io.Resource;
@@ -95,6 +107,9 @@ public class PublicController {
     private final DistrictService districtService;
     private final WardService wardService;
     private final ShopAddressService shopAddressService;
+    private final OrderService orderService;
+    private final NotificationService notificationService;
+    private final SubscriptionService subscriptionService;
 
     @Autowired
     private Gson gsonUtils;
@@ -139,7 +154,7 @@ public class PublicController {
         Category category = categoryService.getById(category_id);
         Integer page = pageOpt.orElse(1) - 1;
         String filter = flt.orElse("default");
-        List<ProductSaleDTO> products = productService.getByCategory(category, page, filter).stream()
+        List<ProductSaleDTO> products = productService.getByCategory(category, page, filter, 40).stream()
                 .map(it -> {
                     var find = productSaleService.findProductInSale(it);
                     if (find != null) {
@@ -282,6 +297,7 @@ public class PublicController {
 
         List<CategoryGroup> attachWith = attachWithService.getAttachWith(cg);
         List<Product> products = categoryGroupService.getProductByCategoryGroups(p, attachWith);
+        List<Product> relatedTo = productService.getByCategory(cg.getCategory(), 0, "default", 10);
 
         var feedbacks = p.getFeedbacks().stream()
                 .map(i -> i.toDto())
@@ -311,6 +327,7 @@ public class PublicController {
                 .productDetailInfos(p.getProductDetailInfos())
                 .shop(shop.toDto())
                 .attachWiths(products)
+                .relatedTo(relatedTo)
                 .build();
 
         return ResponseEntity.ok().body(productDTO);
@@ -363,8 +380,90 @@ public class PublicController {
             productDetailInfoService.save(pdi);
         });
 
+        Shop shop = shopService.getShopById(1);
+
+        shop.getSubscriptions().forEach(it -> {
+            User userr = it.getUser();
+            Notification notification = Notification.builder()
+                    .value(String.format("Shop %s vừa upload sản phẩm mới (%s)", shop.getName(), product.getName()))
+                    .user(userr)
+                    .read(false)
+                    .build();
+            notificationService.save(notification);
+        });
+
         return ResponseEntity.ok().build();
     }
+
+    @GetMapping("/notifications/{user_id}")
+    public List<Notification> getNotifications(@PathVariable("user_id") String email)
+    {
+        User user = (User) userService.loadUserByUsername(email);
+        return user.getNotifications();
+    }
+
+    @GetMapping("/notifications/read")
+    public ResponseEntity<String> setReadNotification()
+    {
+        User user = (User) userService.loadUserByUsername("tranthienthanhbao@gmail.com");
+        List<Notification> notifications = notificationService.getNotificationByUser(user).stream()
+                .map(it -> {
+                    it.setRead(true);
+                    return it;
+                })
+                .toList();
+        notificationService.saveAllAndFlush(notifications);
+        return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/orders/day/{shop_id}")
+    public List<Integer> dataByHour(@PathVariable("shop_id") Integer shopId)
+    {
+        Shop shop = shopService.getShopById(shopId);
+        return orderService.getNumberOfOrderAnalystInDay(shop);
+    }
+
+    @GetMapping("/orders/week/{shop_id}")
+    public List<Integer> dataByWeek(@PathVariable("shop_id") Integer shopId)
+    {
+        Shop shop = shopService.getShopById(shopId);
+        return orderService.getNumberOfOrderAnalystInWeek(shop);
+    }
+
+    @GetMapping("/orders/month/{shop_id}")
+    public List<Integer> dataByMonth(@PathVariable("shop_id") Integer shopId)
+    {
+        Shop shop = shopService.getShopById(shopId);
+        return orderService.getNumberOfOrderAnalystInMonth(shop);
+    }
+
+    @GetMapping("/subscription/{shop_id}")
+    public ResponseEntity<Subscription> subscribeShop(@PathVariable("shop_id") Integer shopId)
+    {
+        User user = (User) userService.loadUserByUsername("tranthienthanhbao@gmail.com");
+        Shop shop = shopService.getShopById(shopId);
+
+        if (shop == null) return ResponseEntity.badRequest().build();
+
+        SubscriptionId id = new SubscriptionId();
+        id.setShopId(shop.getId());
+        id.setUserId(user.getId());
+
+        Subscription subscription = Subscription.builder()
+                .id(id)
+                .shop(shop)
+                .user(user)
+                .build();
+        subscription = subscriptionService.save(subscription);
+
+        return ResponseEntity.ok().body(subscription);
+    }
+
+//    @GetMapping("/orders/analyst/day")
+//    public List<Integer> getNewOrdersAnalystInDay()
+//    {
+//
+//    }
 
     @GetMapping("/product/image/{id}")
     public ResponseEntity<Resource> getProductImage(@PathVariable("id") Integer id, @RequestParam("imgId") Optional<Integer> imgId) {
@@ -593,9 +692,40 @@ public class PublicController {
                 .collect(Collectors.toList());
     }
 
+    public String generateOrderId(ShopDTO shopDTO)
+    {
+        Shop shop = shopService.getShopById(shopDTO.getId());
+        String year = String.valueOf(LocalDateTime.now().getYear());
+        String month = String.valueOf(LocalDateTime.now().getMonth());
+        String date = String.valueOf(LocalDateTime.now().getDayOfMonth());
+        int numberOfOrder = orderService.getNumberOfOrderInCurrentDay(shop);
+        return year + month + date + (numberOfOrder + 1);
+    }
+
     @PostMapping("/order/create")
     public void createOrder(@RequestBody List<CartItem> cartItems)
     {
+        User user = (User) userService.loadUserByUsername("tranthienthanhbao@gmail.com");
+        cartItems.forEach(it -> {
 
+            Order order = Order.builder()
+                    .id(generateOrderId(it.getShop()))
+                    .user(user)
+                    .createdTime(new Date())
+                    .build();
+
+            it.getCartProducts().forEach(tt -> {
+
+                OrderDetailsId id = new OrderDetailsId();
+                id.setOrderId(order.getId());
+                id.setProductId(tt.getProduct().getId());
+
+                OrderDetails orderDetails = OrderDetails.builder()
+                        .product(tt.getProduct())
+                        .order(order)
+                        .id(id)
+                        .build();
+            });
+        });
     }
 }
