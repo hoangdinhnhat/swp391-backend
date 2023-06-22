@@ -10,9 +10,13 @@ import com.swp391.backend.model.shop.ShopService;
 import com.swp391.backend.model.user.User;
 import com.swp391.backend.model.user.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -31,6 +35,11 @@ public class OrderService {
         return orderRepository.save(order);
     }
 
+    public Order getById(String id)
+    {
+        return orderRepository.findById(id).orElse(null);
+    }
+
     public Integer getNumberOfOrderInCurrentDay(Shop shop)
     {
         return orderRepository.getNumberOfOrderInDate(shop.getId());
@@ -40,10 +49,27 @@ public class OrderService {
     {
         List<Integer> rs = new ArrayList<>();
         int hourRange = LocalDateTime.now().getHour();
+        int prev = 0;
         for (int i = 0; i <= hourRange; i += 1)
         {
-            Integer num = orderRepository.getNumberOfOrderAnalystByHourRange(shop.getId(), i);
+            Integer num = orderRepository.getNumberOfOrderAnalystByHourRange(shop.getId(), prev, i);
             rs.add(num);
+            prev = i;
+        }
+
+        return rs;
+    }
+
+    public List<Integer> getNumberOfOrderAnalystInPreviousDay(Shop shop)
+    {
+        List<Integer> rs = new ArrayList<>();
+        int hourRange = LocalDateTime.now().getHour();
+        int prev = 0;
+        for (int i = 0; i <= hourRange; i += 1)
+        {
+            Integer num = orderRepository.getNumberOfOrderAnalystByHourRangePreviousDay(shop.getId(), prev, i);
+            rs.add(num);
+            prev = i;
         }
 
         return rs;
@@ -55,11 +81,12 @@ public class OrderService {
 
         int currentDay = LocalDateTime.now().getDayOfMonth();
         int weekRange = Math.round(Math.round(Math.ceil(currentDay * 1.0 / 7))) - 1;
-
+        int prev = 7 * weekRange + 1;
         for (int i = 7 * weekRange + 1; i <= currentDay; i += 1)
         {
-            Integer num = orderRepository.getNumberOfOrderAnalystByDayRange(shop.getId(), i);
+            Integer num = orderRepository.getNumberOfOrderAnalystByDayRange(shop.getId(), prev, i);
             rs.add(num);
+            prev = i;
         }
 
         return rs;
@@ -71,11 +98,12 @@ public class OrderService {
 
         int currentDay = LocalDateTime.now().getDayOfMonth();
         int weekRange = Math.round(Math.round(Math.ceil(currentDay * 1.0 / 7)));
-
+        int prev = 1;
         for (int i = 1; i <= weekRange; i += 1)
         {
-            Integer num = orderRepository.getNumberOfOrderAnalystByDayRange(shop.getId(), i * 7 );
+            Integer num = orderRepository.getNumberOfOrderAnalystByDayRange(shop.getId(), prev, i * 7 );
             rs.add(num);
+            prev = i;
         }
 
         return rs;
@@ -86,11 +114,34 @@ public class OrderService {
         List<Integer> rs = new ArrayList<>();
 
         int monthRange = LocalDateTime.now().getMonthValue();
-
+        int prev = 1;
         for (int i = 1; i <= monthRange; i += 1)
         {
-            Integer num = orderRepository.getNumberOfOrderAnalystByMonthRange(shop.getId(), i);
+            Integer num = orderRepository.getNumberOfOrderAnalystByMonthRange(shop.getId(), prev, i);
             rs.add(num);
+            prev = i;
+        }
+
+        return rs;
+    }
+
+    public List<Integer> getNumberOfOrderAnalystInAll(Shop shop)
+    {
+        List<Integer> rs = new ArrayList<>();
+
+        int endYearRange = LocalDateTime.now().getYear();
+        int beginYearRange = shop.getJoinTime()
+                .toInstant()
+                .atZone(ZoneId.systemDefault())
+                .toLocalDateTime()
+                .getYear();
+
+        int prev = beginYearRange;
+        for (int i = beginYearRange; i <= endYearRange; i += 1)
+        {
+            Integer num = orderRepository.getNumberOfOrderAnalystByYearRange(shop.getId(), prev, i);
+            rs.add(num);
+            prev = i;
         }
 
         return rs;
@@ -100,10 +151,27 @@ public class OrderService {
     {
         List<Integer> rs = new ArrayList<>();
         int hourRange = LocalDateTime.now().getHour();
+        int prev = 0;
         for (int i = 0; i <= hourRange; i += 1)
         {
-            Integer num = orderRepository.getRevenueAnalystByHourRange(shop.getId(), i);
+            Integer num = orderRepository.getRevenueAnalystByHourRange(shop.getId(), prev, i);
             rs.add(num);
+            prev = i;
+        }
+
+        return rs;
+    }
+
+    public List<Integer> getRevenueAnalystInPreviousDay(Shop shop)
+    {
+        List<Integer> rs = new ArrayList<>();
+        int hourRange = LocalDateTime.now().getHour();
+        int prev = 0;
+        for (int i = 0; i <= hourRange; i += 1)
+        {
+            Integer num = orderRepository.getRevenueAnalystByHourRangePreviousDay(shop.getId(), prev, i);
+            rs.add(num);
+            prev = i;
         }
 
         return rs;
@@ -115,11 +183,12 @@ public class OrderService {
 
         int currentDay = LocalDateTime.now().getDayOfMonth();
         int weekRange = Math.round(Math.round(Math.ceil(currentDay * 1.0 / 7))) - 1;
-
+        int prev = 7 * weekRange + 1;
         for (int i = 7 * weekRange + 1; i <= currentDay; i += 1)
         {
-            Integer num = orderRepository.getRevenueAnalystByDayRange(shop.getId(), i);
+            Integer num = orderRepository.getRevenueAnalystByDayRange(shop.getId(), prev, i);
             rs.add(num);
+            prev = i;
         }
 
         return rs;
@@ -131,11 +200,12 @@ public class OrderService {
 
         int currentDay = LocalDateTime.now().getDayOfMonth();
         int weekRange = Math.round(Math.round(Math.ceil(currentDay * 1.0 / 7)));
-
+        int prev = 1;
         for (int i = 1; i <= weekRange; i += 1)
         {
-            Integer num = orderRepository.getRevenueAnalystByDayRange(shop.getId(), i * 7 );
+            Integer num = orderRepository.getRevenueAnalystByDayRange(shop.getId(), prev, i * 7 );
             rs.add(num);
+            prev = i;
         }
 
         return rs;
@@ -146,27 +216,62 @@ public class OrderService {
         List<Integer> rs = new ArrayList<>();
 
         int monthRange = LocalDateTime.now().getMonthValue();
-
+        int prev = 1;
         for (int i = 1; i <= monthRange; i += 1)
         {
-            Integer num = orderRepository.getRevenueAnalystByMonthRange(shop.getId(), i);
+            Integer num = orderRepository.getRevenueAnalystByMonthRange(shop.getId(), prev, i);
             rs.add(num);
+            prev = i;
         }
 
         return rs;
     }
 
+    public List<Integer> getRevenueAnalystInAll(Shop shop)
+    {
+        List<Integer> rs = new ArrayList<>();
+
+        int endYearRange = LocalDateTime.now().getYear();
+        int beginYearRange = shop.getJoinTime()
+                .toInstant()
+                .atZone(ZoneId.systemDefault())
+                .toLocalDateTime()
+                .getYear();
+
+        int prev = beginYearRange;
+        for (int i = beginYearRange; i <= endYearRange; i += 1)
+        {
+            Integer num = orderRepository.getRevenueAnalystByYearRange(shop.getId(), prev, i);
+            rs.add(num);
+            prev = i;
+        }
+
+        return rs;
+    }
+
+    public List<Order> getByShopAndId(Shop shop, String kw, Integer page) {
+        Pageable pageable = PageRequest.of(page, 6, Sort.by("createdTime").descending());
+        return orderRepository.findByShopAndIdContainingIgnoreCase(shop, kw, pageable);
+    }
+
+    public List<Order> getByShopAndStatusAndId(Shop shop, OrderStatus status, String kw, Integer page) {
+        Pageable pageable = PageRequest.of(page, 6, Sort.by("createdTime").descending());;
+        return orderRepository.findByShopAndStatusAndIdContainingIgnoreCase(shop, status, kw, pageable);
+    }
 
     public void init()
     {
         User user = (User) userService.loadUserByUsername("tranthienthanhbao@gmail.com");
-        Shop shop = shopService.getShopById(1);
-        Product p1 = productService.getProductById(21);
-        Product p2 = productService.getProductById(22);
+        Shop shop = shopService.getShopById(2);
+        Product p1 = productService.getProductById(22);
+        Product p2 = productService.getProductById(25);
 
         Order order = Order.builder()
                 .id("2023061601")
                 .user(user)
+                .status(OrderStatus.COMPLETED)
+                .payment("COD")
+                .description(p1.getDescription().substring(0, 150))
                 .shop(shop)
                 .createdTime(new Date())
                 .build();
@@ -200,6 +305,9 @@ public class OrderService {
         Order order2 = Order.builder()
                 .id("2023061602")
                 .user(user)
+                .status(OrderStatus.COMPLETED)
+                .payment("COD")
+                .description(p1.getDescription().substring(0, 150))
                 .shop(shop)
                 .createdTime(new Date())
                 .build();

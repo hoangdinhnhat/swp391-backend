@@ -26,6 +26,8 @@ public class OrderDetailsService {
         ProductSale sale = productSaleService.findProductInSale(product);
 
         double price = product.getPrice();
+        var realPrice = price * orderDetails.getQuantity();
+        order.setRealPrice(order.getRealPrice() + realPrice);
 
         if (sale != null)
         {
@@ -36,7 +38,7 @@ public class OrderDetailsService {
 
         price *= orderDetails.getQuantity();
 
-        order.setTotalPrice(order.getTotalPrice() + price);
+        order.setSellPrice(order.getSellPrice() + price);
         orderRepository.save(order);
         return orderDetailsRepository.save(orderDetails);
     }

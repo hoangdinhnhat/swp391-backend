@@ -1,5 +1,6 @@
 package com.swp391.backend;
 
+import com.swp391.backend.controllers.chat.ChatService;
 import com.swp391.backend.model.category.CategoryService;
 import com.swp391.backend.model.categoryDetailInfo.CategoryDetailInfoService;
 import com.swp391.backend.model.categoryGroup.CategoryGroupService;
@@ -101,6 +102,13 @@ public class BackendApplication {
     CommandLineRunner init9(OrderService orderService) {
         return (args) -> {
             orderService.init();
+        };
+    }
+
+    @Bean
+    CommandLineRunner init10(ChatService chatService) {
+        return (args) -> {
+            chatService.init();
         };
     }
 }

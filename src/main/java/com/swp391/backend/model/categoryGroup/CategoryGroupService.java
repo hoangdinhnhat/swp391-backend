@@ -2,10 +2,12 @@ package com.swp391.backend.model.categoryGroup;
 
 import com.swp391.backend.model.category.CategoryService;
 import com.swp391.backend.model.product.Product;
+import com.swp391.backend.model.shop.Shop;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -15,6 +17,18 @@ public class CategoryGroupService {
 
     private final CategoryGroupRepository categoryGroupRepository;
     private final CategoryService categoryService;
+
+    public CategoryGroup getCategoryGroupById(Integer id) {
+        return categoryGroupRepository.findById(id).orElse(null);
+    }
+
+    public CategoryGroup save(CategoryGroup categoryGroup) {
+        return categoryGroupRepository.save(categoryGroup);
+    }
+
+    public void delete(Integer id) {
+        categoryGroupRepository.deleteById(id);
+    }
 
     public List<Product> getProductByCategoryGroups(Product product, List<CategoryGroup> categoryGroups) {
         List<Product> products = new ArrayList<>();
@@ -35,16 +49,22 @@ public class CategoryGroupService {
         return products;
     }
 
-    public CategoryGroup getCategoryGroupById(Integer id) {
-        return categoryGroupRepository.findById(id).orElse(null);
-    }
+    public List<CategoryGroupSold> getTopThreeSoldCategoryGroupInDay(Shop shop)
+    {
+        List<CategoryGroupSold> rs = new ArrayList<>();
+        int hourRange = LocalDateTime.now().getHour();
+        List<CategoryGroup> categoryGroups = categoryGroupRepository.getTopThreeSoldCategoryGroupByHourRange(shop.getId(), hourRange);
+        categoryGroups.forEach(it -> {
+            Integer sold = categoryGroupRepository.getSoldByCategoryGroupByHourRange(shop.getId(), it.getId(), hourRange);
+            CategoryGroupSold categoryGroupSold = CategoryGroupSold.builder()
+                    .categoryGroup(it.toDTO())
+                    .sold(sold)
+                    .build();
 
-    public CategoryGroup save(CategoryGroup categoryGroup) {
-        return categoryGroupRepository.save(categoryGroup);
-    }
+            rs.add(categoryGroupSold);
+        });
 
-    public void delete(Integer id) {
-        categoryGroupRepository.deleteById(id);
+        return rs;
     }
 
     public void init() {

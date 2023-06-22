@@ -94,7 +94,8 @@ public interface ProductRepository extends PagingAndSortingRepository<Product, I
                     "       p.sold, \n" +
                     "       p.video, \n" +
                     "       p.category_group_id, \n" +
-                    "       p.shop_id\n" +
+                    "       p.shop_id,\n" +
+                    "       p.ban\n" +
                     "from product p \n" +
                     "    inner join category_group cg \n" +
                     "        on p.category_group_id = cg.id \n" +
@@ -113,7 +114,8 @@ public interface ProductRepository extends PagingAndSortingRepository<Product, I
                     "       p.sold, \n" +
                     "       p.video, \n" +
                     "       p.category_group_id, \n" +
-                    "       p.shop_id\n" +
+                    "       p.shop_id,\n" +
+                    "       p.ban\n" +
                     "from product p \n" +
                     "    inner join category_group cg \n" +
                     "        on p.category_group_id = cg.id \n" +

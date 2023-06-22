@@ -26,17 +26,17 @@ public class ShopAddress {
 
     @ManyToOne
     @JoinColumn(name = "province_id", nullable = false)
-    @JsonManagedReference
+    @JsonManagedReference(value = "shopAddress")
     private Province province;
 
     @ManyToOne
     @JoinColumn(name = "district_id", nullable = false)
-    @JsonManagedReference
+    @JsonManagedReference(value = "shopAddress")
     private District district;
 
     @ManyToOne
     @JoinColumn(name = "ward_id", nullable = false)
-    @JsonManagedReference
+    @JsonManagedReference(value = "shopAddress")
     private Ward ward;
 
     private String specificAddress;

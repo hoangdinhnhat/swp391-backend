@@ -6,10 +6,12 @@ package com.swp391.backend.model.user;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.swp391.backend.model.ConversationChatter.ConversationChatter;
 import com.swp391.backend.model.cart.Cart;
 import com.swp391.backend.model.notification.Notification;
 import com.swp391.backend.model.productFeedback.Feedback;
 import com.swp391.backend.model.receiveinfo.ReceiveInfo;
+import com.swp391.backend.model.shop.Shop;
 import com.swp391.backend.model.subscription.Subscription;
 import com.swp391.backend.model.token.Token;
 import jakarta.persistence.*;
@@ -80,6 +82,14 @@ public class User implements UserDetails{
     @OneToMany(mappedBy = "user")
     @JsonManagedReference
     List<Notification> notifications;
+
+    @OneToMany(mappedBy = "user")
+    @JsonManagedReference
+    private List<Shop> shops;
+
+    @OneToMany(mappedBy = "user")
+    @JsonBackReference
+    private List<ConversationChatter> conversationChatters;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

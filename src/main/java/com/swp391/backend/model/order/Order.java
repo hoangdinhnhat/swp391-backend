@@ -38,7 +38,11 @@ public class Order {
     private List<OrderDetails> orderDetails;
 
     private Date createdTime;
-    private double totalPrice;
+    private double shippingFee;
+    private String payment;
+    private String description;
+    private double sellPrice;
+    private double realPrice;
 
     @Enumerated(EnumType.STRING)
     private OrderStatus status;

@@ -16,6 +16,7 @@ public class ShopDTO {
     private String name;
     private String shopImage;
     private double rating;
+    private Integer userId;
     private Date joinTime;
     private int followers;
     private int products;

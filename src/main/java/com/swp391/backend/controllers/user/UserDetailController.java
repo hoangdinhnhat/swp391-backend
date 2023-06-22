@@ -14,6 +14,12 @@ import com.swp391.backend.model.cartProduct.CartProductKey;
 import com.swp391.backend.model.cartProduct.CartProductService;
 import com.swp391.backend.model.district.District;
 import com.swp391.backend.model.district.DistrictService;
+import com.swp391.backend.model.order.Order;
+import com.swp391.backend.model.order.OrderService;
+import com.swp391.backend.model.order.OrderStatus;
+import com.swp391.backend.model.orderDetails.OrderDetails;
+import com.swp391.backend.model.orderDetails.OrderDetailsId;
+import com.swp391.backend.model.orderDetails.OrderDetailsService;
 import com.swp391.backend.model.product.Product;
 import com.swp391.backend.model.product.ProductService;
 import com.swp391.backend.model.productSale.ProductSale;
@@ -33,13 +39,10 @@ import com.swp391.backend.model.user.UserDTO;
 import com.swp391.backend.model.user.UserService;
 import com.swp391.backend.model.ward.Ward;
 import com.swp391.backend.model.ward.WardService;
-import com.swp391.backend.utils.json.JsonUtils;
 import com.swp391.backend.utils.storage.StorageService;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Optional;
+import java.time.LocalDateTime;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import lombok.RequiredArgsConstructor;
@@ -54,7 +57,6 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -86,12 +88,8 @@ public class UserDetailController {
     private final DistrictService districtService;
     private final WardService wardService;
     private final SubscriptionService subscriptionService;
-
-//    @GetMapping("/{email}")
-//    @PreAuthorize("#email == authentication.principal.username")
-//    public UserDetails get(@PathVariable("email") String email) {
-//        return userService.loadUserByUsername(email);
-//    }
+    private final OrderService orderService;
+    private final OrderDetailsService orderDetailsService;
 
     @GetMapping("/info")
     public ResponseEntity<UserDTO> loginUserInfo() {
@@ -103,12 +101,22 @@ public class UserDetailController {
         if (cart != null) {
             cartProducts = cartProductService.getCartProductByCart(cart, 1);
         }
+
+        List<Shop> shops = user.getShops();
+        ShopDTO shop = null;
+        if (shops.size() > 0)
+        {
+            shop = shops.get(0).toDto();
+        }
+
         UserDTO userDTO = UserDTO.builder()
+                .id(user.getId())
                 .email(user.getEmail())
                 .firstname(user.getFirstname())
                 .lastname(user.getLastname())
                 .imageurl(user.getImageurl())
                 .gender(user.getGender())
+                .shopDTO(shop)
                 .receiveInfoPage(page)
                 .defaultReceiveInfo(defaultInfo)
                 .cartProducts(cartProducts)
@@ -387,8 +395,62 @@ public class UserDetailController {
         return ResponseEntity.ok().build();
     }
 
-    @PostMapping("/shop/create")
-    public void createShop() {
+    public String generateOrderId(ShopDTO shopDTO) {
+        Shop shop = shopService.getShopById(shopDTO.getId());
+        String year = String.valueOf(LocalDateTime.now().getYear());
+        String month = String.valueOf(LocalDateTime.now().getMonthValue());
+        String date = String.valueOf(LocalDateTime.now().getDayOfMonth());
+        int numberOfOrder = orderService.getNumberOfOrderInCurrentDay(shop);
+        return year + month + date + (numberOfOrder + 1);
+    }
 
+    @PostMapping("/order/create")
+    public void createOrder(@RequestBody List<CheckOutRequest> checkOutRequests) {
+
+        User user = (User) authenticatedManager.getAuthenticatedUser();
+        Cart cart = user.getCart();
+        checkOutRequests.forEach(it -> {
+
+            Shop shop = shopService.getShopById(it.getShopId());
+            Product product = productService.getProductById(it.getCheckOutItems().get(0).getProductId());
+            String description = product.getDescription().substring(0, 150);
+
+            Order order = Order.builder()
+                    .id(generateOrderId(shop.toDto()))
+                    .user(user)
+                    .status(OrderStatus.PENDING)
+                    .payment("COD")
+                    .description(description)
+                    .shop(shop)
+                    .createdTime(new Date())
+                    .build();
+
+            orderService.save(order);
+
+            it.getCheckOutItems().forEach(tt -> {
+
+                OrderDetailsId id = new OrderDetailsId();
+                id.setOrderId(order.getId());
+                id.setProductId(tt.getProductId());
+                Product product1 = productService.getProductById(tt.getProductId());
+
+                OrderDetails orderDetails = OrderDetails.builder()
+                        .product(product1)
+                        .quantity(tt.getQuantity())
+                        .order(order)
+                        .id(id)
+                        .build();
+                orderDetailsService.save(orderDetails);
+                product1.setAvailable(product1.getAvailable() - 1);
+                productService.save(product1);
+
+                CartProductKey cpi = new CartProductKey();
+                cpi.cartId = cart.getId();
+                cpi.productId = product1.getId();
+
+                cartProductService.delete(cpi);
+            });
+            order.setSellPrice(order.getSellPrice() + 20);
+        });
     }
 }

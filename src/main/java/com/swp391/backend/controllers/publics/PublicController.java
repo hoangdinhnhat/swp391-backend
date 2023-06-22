@@ -15,15 +15,14 @@ import com.swp391.backend.model.cart.CartService;
 import com.swp391.backend.model.cartProduct.CartProduct;
 import com.swp391.backend.model.cartProduct.CartProductKey;
 import com.swp391.backend.model.cartProduct.CartProductService;
-import com.swp391.backend.model.category.Category;
-import com.swp391.backend.model.category.CategoryDetails;
-import com.swp391.backend.model.category.CategoryRepository;
-import com.swp391.backend.model.category.CategoryService;
+import com.swp391.backend.model.category.*;
 import com.swp391.backend.model.categoryDetailInfo.CategoryDetailInfo;
 import com.swp391.backend.model.categoryDetailInfo.CategoryDetailInfoRepository;
 import com.swp391.backend.model.categoryDetailInfo.CategoryDetailInfoService;
 import com.swp391.backend.model.categoryGroup.CategoryGroup;
+import com.swp391.backend.model.categoryGroup.CategoryGroupDTO;
 import com.swp391.backend.model.categoryGroup.CategoryGroupService;
+import com.swp391.backend.model.categoryGroup.CategoryGroupSold;
 import com.swp391.backend.model.district.District;
 import com.swp391.backend.model.district.DistrictService;
 import com.swp391.backend.model.notification.Notification;
@@ -44,6 +43,8 @@ import com.swp391.backend.model.productFeedback.Feedback;
 import com.swp391.backend.model.productFeedback.FeedbackService;
 import com.swp391.backend.model.productFeedbackImage.ProductFeedbackImage;
 import com.swp391.backend.model.productFeedbackImage.ProductFeedbackImageService;
+import com.swp391.backend.model.productFeedbackReply.FeedbackReply;
+import com.swp391.backend.model.productFeedbackReply.FeedbackReplyService;
 import com.swp391.backend.model.productImage.ProductImage;
 import com.swp391.backend.model.productImage.ProductImageServie;
 import com.swp391.backend.model.productSale.ProductSale;
@@ -103,13 +104,10 @@ public class PublicController {
     private final ProductImageServie productImageServie;
     private final ProductDetailInfoService productDetailInfoService;
     private final ProductFeedbackImageService productFeedbackImageService;
-    private final ProvinceService provinceService;
-    private final DistrictService districtService;
-    private final WardService wardService;
-    private final ShopAddressService shopAddressService;
     private final OrderService orderService;
     private final NotificationService notificationService;
     private final SubscriptionService subscriptionService;
+    private final FeedbackReplyService feedbackReplyService;
 
     @Autowired
     private Gson gsonUtils;
@@ -147,6 +145,22 @@ public class PublicController {
     @GetMapping("/time")
     public Date getTime() {
         return new Date();
+    }
+
+    @GetMapping("/category/all")
+    public List<CategoryDTO> getAllCategory() {
+        var categories = categoryService.getAll().stream()
+                .map(it -> it.toDto())
+                .collect(Collectors.toList());
+        return categories;
+    }
+
+    @GetMapping("/category/group/{id}")
+    public List<CategoryGroupDTO> getAllCategoryGroup(@PathVariable("id") Integer categoryId) {
+        List<CategoryGroup> categoryGroups = categoryService.getById(categoryId).getCategoryGroups();
+        return categoryGroups.stream()
+                .map(t -> t.toDTO())
+                .collect(Collectors.toList());
     }
 
     @GetMapping("/category/{category_id}")
@@ -207,6 +221,16 @@ public class PublicController {
                     .productSale(productSaleDto)
                     .build();
         }).collect(Collectors.toList());
+    }
+
+    @GetMapping("/category/details/{id}")
+    public ResponseEntity<List<CategoryDetailInfo>> getCategoryDetail(@PathVariable("id") Integer categoryId) {
+        Category category = categoryService.getById(categoryId);
+        if (category == null) {
+            return ResponseEntity.badRequest().build();
+        }
+        List<CategoryDetailInfo> categoryDetailInfos = categoryDetailInfoService.getByCategory(category);
+        return ResponseEntity.ok().body(categoryDetailInfos);
     }
 
     @GetMapping("/product/all")
@@ -297,7 +321,19 @@ public class PublicController {
 
         List<CategoryGroup> attachWith = attachWithService.getAttachWith(cg);
         List<Product> products = categoryGroupService.getProductByCategoryGroups(p, attachWith);
-        List<Product> relatedTo = productService.getByCategory(cg.getCategory(), 0, "default", 10);
+        List<ProductSaleDTO> relatedTo = productService.getByCategory(cg.getCategory(), 0, "default", 10)
+                .stream()
+                .map(it -> {
+                    var find = productSaleService.findProductInSale(it);
+                    if (find != null) {
+                        return find.toDto();
+                    } else {
+                        return ProductSaleDTO.builder()
+                                .product(it)
+                                .build();
+                    }
+                }).collect(Collectors.toList());
+
 
         var feedbacks = p.getFeedbacks().stream()
                 .map(i -> i.toDto())
@@ -334,7 +370,7 @@ public class PublicController {
     }
 
     @PostMapping("/product/upload")
-    public ResponseEntity<String> uploadProduct(@RequestParam("product") String jsonRequest,  @RequestParam("images") MultipartFile[] images, @RequestParam("video") MultipartFile video) {
+    public ResponseEntity<String> uploadProduct(@RequestParam("product") String jsonRequest, @RequestParam("images") MultipartFile[] images, @RequestParam("video") MultipartFile video) {
         var request = gsonUtils.fromJson(jsonRequest, ProductRequest.class);
         CategoryGroup group = categoryGroupService.getCategoryGroupById(request.getCategoryGroup());
         var productRequest = Product.builder()
@@ -354,9 +390,8 @@ public class PublicController {
 
         int count = 0;
         var services = (ProductImageStorageService) productImageStorageService;
-        for(MultipartFile image : images)
-        {
-            count ++;
+        for (MultipartFile image : images) {
+            count++;
             services.store(image, "" + product.getId(), count + ".jpg");
             var pI = ProductImage.builder()
                     .product(product)
@@ -385,8 +420,11 @@ public class PublicController {
         shop.getSubscriptions().forEach(it -> {
             User userr = it.getUser();
             Notification notification = Notification.builder()
-                    .value(String.format("Shop %s vừa upload sản phẩm mới (%s)", shop.getName(), product.getName()))
+                    .title(String.format("Shop %s vừa upload sản phẩm mới", shop.getName()))
+                    .content(product.getDescription().substring(0, 100))
+                    .imageUrl(product.getImages().get(0).getUrl())
                     .user(userr)
+                    .createdAt(new Date())
                     .read(false)
                     .build();
             notificationService.save(notification);
@@ -396,15 +434,13 @@ public class PublicController {
     }
 
     @GetMapping("/notifications/{user_id}")
-    public List<Notification> getNotifications(@PathVariable("user_id") String email)
-    {
+    public List<Notification> getNotifications(@PathVariable("user_id") String email) {
         User user = (User) userService.loadUserByUsername(email);
         return user.getNotifications();
     }
 
     @GetMapping("/notifications/read")
-    public ResponseEntity<String> setReadNotification()
-    {
+    public ResponseEntity<String> setReadNotification() {
         User user = (User) userService.loadUserByUsername("tranthienthanhbao@gmail.com");
         List<Notification> notifications = notificationService.getNotificationByUser(user).stream()
                 .map(it -> {
@@ -417,29 +453,25 @@ public class PublicController {
     }
 
     @GetMapping("/orders/day/{shop_id}")
-    public List<Integer> dataByHour(@PathVariable("shop_id") Integer shopId)
-    {
+    public List<Integer> dataByHour(@PathVariable("shop_id") Integer shopId) {
         Shop shop = shopService.getShopById(shopId);
         return orderService.getNumberOfOrderAnalystInDay(shop);
     }
 
     @GetMapping("/orders/week/{shop_id}")
-    public List<Integer> dataByWeek(@PathVariable("shop_id") Integer shopId)
-    {
+    public List<Integer> dataByWeek(@PathVariable("shop_id") Integer shopId) {
         Shop shop = shopService.getShopById(shopId);
         return orderService.getNumberOfOrderAnalystInWeek(shop);
     }
 
     @GetMapping("/orders/month/{shop_id}")
-    public List<Integer> dataByMonth(@PathVariable("shop_id") Integer shopId)
-    {
+    public List<Integer> dataByMonth(@PathVariable("shop_id") Integer shopId) {
         Shop shop = shopService.getShopById(shopId);
         return orderService.getNumberOfOrderAnalystInMonth(shop);
     }
 
     @GetMapping("/subscription/{shop_id}")
-    public ResponseEntity<Subscription> subscribeShop(@PathVariable("shop_id") Integer shopId)
-    {
+    public ResponseEntity<Subscription> subscribeShop(@PathVariable("shop_id") Integer shopId) {
         User user = (User) userService.loadUserByUsername("tranthienthanhbao@gmail.com");
         Shop shop = shopService.getShopById(shopId);
 
@@ -493,8 +525,20 @@ public class PublicController {
         return ResponseEntity.badRequest().build();
     }
 
+    @PostMapping("/feedbacks/response/{feedback_id}")
+    public void shopResponseFeedback(@PathVariable("feedback_id") Integer feedbackId, @RequestBody String response) {
+        Feedback feedback = feedbackService.getById(feedbackId);
+
+        var feedbackRep = FeedbackReply.builder()
+                .feedback(feedback)
+                .content("We would like to thank our users for their continued support of our product. We are always working to improve the product, and we appreciate your feedback. We know that there are still some features that are missing, and we are sorry for any inconvenience this may cause. We are working hard to add these features as soon as possible.")
+                .build();
+
+        feedbackReplyService.save(feedbackRep);
+    }
+
     @PostMapping("/product/feedbacks/upload")
-    public ResponseEntity<String> uploadProductFeedback(@RequestParam("feedback") String jsonRequest,  @RequestParam("images") MultipartFile[] images, @RequestParam("video") MultipartFile video) {
+    public ResponseEntity<String> uploadProductFeedback(@RequestParam("feedback") String jsonRequest, @RequestParam("images") MultipartFile[] images, @RequestParam("video") MultipartFile video) {
         var request = gsonUtils.fromJson(jsonRequest, FeedbackRequest.class);
         var product = productService.getProductById(request.getProductId());
         var user = (User) userService.loadUserByUsername(request.getUserId());
@@ -516,9 +560,8 @@ public class PublicController {
 
         int count = 0;
         var services = (ProductFeedbackImageStorageService) productFeedbackImageStorageService;
-        for(MultipartFile image : images)
-        {
-            count ++;
+        for (MultipartFile image : images) {
+            count++;
             services.store(image, feedback.getId().toString(), count + ".jpg");
             var pFI = ProductFeedbackImage.builder()
                     .feedback(feedback)
@@ -558,47 +601,6 @@ public class PublicController {
         return ResponseEntity.badRequest().build();
     }
 
-    @PostMapping("/shop/create")
-    public Shop createShop(@RequestParam("shop") String jsonRequest,  @RequestParam("images") MultipartFile[] images)
-    {
-        var request = gsonUtils.fromJson(jsonRequest, ShopRequest.class);
-
-        Province pr = Province.builder()
-                .id(request.getProvinceId())
-                .name(request.getProvinceName())
-                .build();
-        Province province = provinceService.save(pr);
-
-        District dt = District.builder()
-                .id(request.getDistrictId())
-                .name(request.getDistrictName())
-                .build();
-        District district = districtService.save(dt);
-
-        Ward wd = Ward.builder()
-                .id(request.getWardId())
-                .name(request.getWardName())
-                .build();
-        Ward ward = wardService.save(wd);
-
-        ShopAddress shopAddress = ShopAddress.builder()
-                .province(province)
-                .district(district)
-                .ward(ward)
-                .specificAddress(request.getSpecific_address())
-                .build();
-        shopAddressService.save(shopAddress);
-
-        Shop shopRequest = Shop.builder()
-                .name(request.getName())
-                .shopImage("/api/v1/publics/shop/image/-1")
-                .shopAddress(shopAddress)
-                .joinTime(new Date())
-                .build();
-
-        return shopService.save(shopRequest);
-    }
-
     @GetMapping("/shop/{id}")
     public ShopDetails shopDetail(
             @PathVariable("id") Optional<Integer> id,
@@ -630,8 +632,7 @@ public class PublicController {
             header.set(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + file.getFilename() + "\"");
             header.set(HttpHeaders.CONTENT_TYPE, "image/jpeg");
             return ResponseEntity.ok().headers(header).body(file);
-        }else
-        {
+        } else {
             String image = "shop/default.jpg";
             Resource file = storageService.loadAsResource(image);
             HttpHeaders header = new HttpHeaders();
@@ -692,40 +693,8 @@ public class PublicController {
                 .collect(Collectors.toList());
     }
 
-    public String generateOrderId(ShopDTO shopDTO)
-    {
-        Shop shop = shopService.getShopById(shopDTO.getId());
-        String year = String.valueOf(LocalDateTime.now().getYear());
-        String month = String.valueOf(LocalDateTime.now().getMonth());
-        String date = String.valueOf(LocalDateTime.now().getDayOfMonth());
-        int numberOfOrder = orderService.getNumberOfOrderInCurrentDay(shop);
-        return year + month + date + (numberOfOrder + 1);
-    }
-
-    @PostMapping("/order/create")
-    public void createOrder(@RequestBody List<CartItem> cartItems)
-    {
-        User user = (User) userService.loadUserByUsername("tranthienthanhbao@gmail.com");
-        cartItems.forEach(it -> {
-
-            Order order = Order.builder()
-                    .id(generateOrderId(it.getShop()))
-                    .user(user)
-                    .createdTime(new Date())
-                    .build();
-
-            it.getCartProducts().forEach(tt -> {
-
-                OrderDetailsId id = new OrderDetailsId();
-                id.setOrderId(order.getId());
-                id.setProductId(tt.getProduct().getId());
-
-                OrderDetails orderDetails = OrderDetails.builder()
-                        .product(tt.getProduct())
-                        .order(order)
-                        .id(id)
-                        .build();
-            });
-        });
+    @GetMapping("/test/cate/{id}")
+    public List<CategoryGroupSold> getTest(@PathVariable("id") Integer shopId) {
+        return categoryGroupService.getTopThreeSoldCategoryGroupInDay(shopService.getShopById(2));
     }
 }

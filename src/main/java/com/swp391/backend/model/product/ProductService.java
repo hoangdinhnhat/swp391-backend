@@ -75,6 +75,33 @@ public class ProductService {
         return productRepository.findByShop(shop, pageable);
     }
 
+    public List<Product> getByOwnShop(Shop shop, Integer page, String filter) {
+        Pageable pageable = null;
+        switch (filter) {
+            case "name.a-z":
+                pageable = PageRequest.of(page, 5, Sort.by("name").ascending());
+                break;
+            case "name.z-a":
+                pageable = PageRequest.of(page, 5, Sort.by("name").descending());
+                break;
+            case "price.h-l":
+                pageable = PageRequest.of(page, 5, Sort.by("price").descending());
+                break;
+            case "price.l-h":
+                pageable = PageRequest.of(page, 5, Sort.by("price").ascending());
+                break;
+            case "quantity.asc":
+                pageable = PageRequest.of(page, 5, Sort.by("available").ascending());
+                break;
+            case "quantity.desc":
+                pageable = PageRequest.of(page, 5, Sort.by("available").descending());
+                break;
+            default:
+                pageable = PageRequest.of(page, 5, Sort.by("uploadTime").descending());
+        }
+        return productRepository.findByShop(shop, pageable);
+    }
+
     public int getMaxPage(Shop shop) {
         List<Product> list = productRepository.findByShop(shop);
         int length = list.size();

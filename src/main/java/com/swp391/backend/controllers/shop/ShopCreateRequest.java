@@ -1,4 +1,4 @@
-package com.swp391.backend.controllers.publics;
+package com.swp391.backend.controllers.shop;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -9,7 +9,7 @@ import lombok.ToString;
 @Builder
 @AllArgsConstructor
 @ToString
-public class ShopRequest {
+public class ShopCreateRequest {
     private String name;
     private Integer provinceId;
     private String provinceName;

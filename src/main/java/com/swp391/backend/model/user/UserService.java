@@ -31,6 +31,14 @@ public class UserService implements UserDetailsService {
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
         return user;
     }
+
+    public UserDetails getById(Integer id)
+    {
+        UserDetails user = repository.findById(id)
+                .orElseThrow(() -> new UsernameNotFoundException("User ID not found"));
+
+        return user;
+    }
     
     public UserDetails loadUserByUsername(String username, String filter) throws UsernameNotFoundException {
         User user = (User) repository.findByEmail(username)
@@ -85,5 +93,18 @@ public class UserService implements UserDetailsService {
                 .role(Role.CUSTOMER)
                 .build();
         save(user2);
+
+        var user3 = User.builder()
+                .firstname("Nhat")
+                .lastname("Hoang Dinh")
+                .email("nhathdse160377@fpt.edu.vn")
+                .gender(Gender.MALE)
+                .enabled(true)
+                .locked(false)
+                .imageurl("/api/v1/publics/user/avatar/nhathdse160377@fpt.edu.vn")
+                .password(new BCryptPasswordEncoder().encode("1234"))
+                .role(Role.CUSTOMER)
+                .build();
+        save(user3);
     }
 }

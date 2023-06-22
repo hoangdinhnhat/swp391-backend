@@ -4,14 +4,18 @@
  */
 package com.swp391.backend.model.shop;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.swp391.backend.model.ConversationChatter.ConversationChatter;
 import com.swp391.backend.model.cart.Cart;
 import com.swp391.backend.model.category.Category;
+import com.swp391.backend.model.notification.Notification;
 import com.swp391.backend.model.order.Order;
 import com.swp391.backend.model.product.Product;
 import com.swp391.backend.model.shopAddress.ShopAddress;
 import com.swp391.backend.model.subscription.Subscription;
+import com.swp391.backend.model.user.User;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
@@ -58,6 +62,19 @@ public class Shop {
     @JsonManagedReference
     private List<Order> orders;
 
+    @OneToMany(mappedBy = "shop")
+    @JsonManagedReference
+    List<Notification> notifications;
+
+    @ManyToOne
+    @JoinColumn(name = "user_id")
+    @JsonBackReference
+    private User user;
+
+    @OneToMany(mappedBy = "shop")
+    @JsonBackReference
+    private List<ConversationChatter> conversationChatters;
+
     public double getRating()
     {
         double rating = 0;
@@ -80,6 +97,7 @@ public class Shop {
                 .name(name)
                 .shopImage(shopImage)
                 .products(products.size())
+                .userId(user.getId())
                 .address(shopAddress)
                 .rating(rating)
                 .followers(subscriptions.size())

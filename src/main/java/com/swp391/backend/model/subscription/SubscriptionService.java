@@ -7,7 +7,11 @@ import com.swp391.backend.model.user.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -20,6 +24,108 @@ public class SubscriptionService {
     public Subscription save(Subscription subscription)
     {
         return subscriptionRepository.save(subscription);
+    }
+
+    public List<Integer> getNumberOfSubscriptionAnalystInDay(Shop shop)
+    {
+        List<Integer> rs = new ArrayList<>();
+        int hourRange = LocalDateTime.now().getHour();
+        int prev = 0;
+        for (int i = 0; i <= hourRange; i += 1)
+        {
+            Integer num = subscriptionRepository.getSubscriptionAnalystByHourRange(shop.getId(), prev, i);
+            rs.add(num);
+            prev = i;
+        }
+
+        return rs;
+    }
+
+    public List<Integer> getNumberOfSubscriptionAnalystInPreviousDay(Shop shop)
+    {
+        List<Integer> rs = new ArrayList<>();
+        int hourRange = LocalDateTime.now().getHour();
+        int prev = 0;
+        for (int i = 0; i <= hourRange; i += 1)
+        {
+            Integer num = subscriptionRepository.getSubscriptionAnalystByHourRangePreviousDay(shop.getId(), prev, i);
+            rs.add(num);
+            prev = i;
+        }
+
+        return rs;
+    }
+
+    public List<Integer> getNumberOfSubscriptionAnalystInWeek(Shop shop)
+    {
+        List<Integer> rs = new ArrayList<>();
+
+        int currentDay = LocalDateTime.now().getDayOfMonth();
+        int weekRange = Math.round(Math.round(Math.ceil(currentDay * 1.0 / 7))) - 1;
+        int prev = 7 * weekRange + 1;
+        for (int i = 7 * weekRange + 1; i <= currentDay; i += 1)
+        {
+            Integer num = subscriptionRepository.getSubscriptionAnalystByDayRange(shop.getId(), prev, i);
+            rs.add(num);
+            prev = i;
+        }
+
+        return rs;
+    }
+
+    public List<Integer> getNumberOfSubscriptionAnalystInMonth(Shop shop)
+    {
+        List<Integer> rs = new ArrayList<>();
+
+        int currentDay = LocalDateTime.now().getDayOfMonth();
+        int weekRange = Math.round(Math.round(Math.ceil(currentDay * 1.0 / 7)));
+        int prev = 1;
+        for (int i = 1; i <= weekRange; i += 1)
+        {
+            Integer num = subscriptionRepository.getSubscriptionAnalystByDayRange(shop.getId(), prev, i * 7 );
+            rs.add(num);
+            prev = i;
+        }
+
+        return rs;
+    }
+
+    public List<Integer> getNumberOfSubscriptionAnalystInYear(Shop shop)
+    {
+        List<Integer> rs = new ArrayList<>();
+
+        int monthRange = LocalDateTime.now().getMonthValue();
+        int prev = 1;
+        for (int i = 1; i <= monthRange; i += 1)
+        {
+            Integer num = subscriptionRepository.getSubscriptionAnalystByMonthRange(shop.getId(), prev, i);
+            rs.add(num);
+            prev = i;
+        }
+
+        return rs;
+    }
+
+    public List<Integer> getNumberOfSubscriptionAnalystInAll(Shop shop)
+    {
+        List<Integer> rs = new ArrayList<>();
+
+        int endYearRange = LocalDateTime.now().getYear();
+        int beginYearRange = shop.getJoinTime()
+                .toInstant()
+                .atZone(ZoneId.systemDefault())
+                .toLocalDateTime()
+                .getYear();
+
+        int prev = beginYearRange;
+        for (int i = beginYearRange; i <= endYearRange; i += 1)
+        {
+            Integer num = subscriptionRepository.getSubscriptionAnalystByYearRange(shop.getId(), prev, i);
+            rs.add(num);
+            prev = i;
+        }
+
+        return rs;
     }
 
     public void init()

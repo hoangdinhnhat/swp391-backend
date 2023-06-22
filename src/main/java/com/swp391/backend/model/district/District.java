@@ -24,6 +24,6 @@ public class District {
     private List<ReceiveInfo> receiveInfos;
 
     @OneToMany(mappedBy = "district")
-    @JsonBackReference
+    @JsonBackReference(value = "shopAddress")
     private List<ShopAddress> shopAddresses;
 }

@@ -82,6 +82,8 @@ public class Product {
     @JsonManagedReference
     private List<OrderDetails> orderDetails;
 
+    private boolean ban;
+
     public double getRating()
     {
         double rating = 0;

@@ -22,12 +22,12 @@ public interface ShopRepository extends PagingAndSortingRepository<Shop, Integer
 
     @Query(
             value = "select distinct s.id,\n" +
-                    "       s.followers,\n" +
                     "       s.join_time,\n" +
                     "       s.name,\n" +
                     "       s.rating,\n" +
                     "       s.shop_image,\n" +
-                    "       s.shop_addess_id\n" +
+                    "       s.shop_address_id,\n" +
+                    "       s.user_id\n" +
                     "from shop s\n" +
                     "inner join product p\n" +
                     "on p.shop_id = s.id\n" +

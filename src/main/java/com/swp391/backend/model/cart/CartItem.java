@@ -16,4 +16,5 @@ import java.util.List;
 public class CartItem {
     private ShopDTO shop;
     private List<CartProductDTO> cartProducts;
+    private Integer shippingFee;
 }
