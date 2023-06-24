@@ -21,6 +21,9 @@ import com.swp391.backend.model.product.Product;
 import com.swp391.backend.model.product.ProductService;
 import com.swp391.backend.model.productDetailInfo.ProductDetailInfo;
 import com.swp391.backend.model.productDetailInfo.ProductDetailInfoService;
+import com.swp391.backend.model.productFeedback.Feedback;
+import com.swp391.backend.model.productFeedback.FeedbackDTO;
+import com.swp391.backend.model.productFeedback.FeedbackService;
 import com.swp391.backend.model.productImage.ProductImage;
 import com.swp391.backend.model.productImage.ProductImageServie;
 import com.swp391.backend.model.province.Province;
@@ -79,6 +82,7 @@ public class ShopController {
     private final CategoryDetailInfoService categoryDetailInfoService;
     private final CategoryService categoryService;
     private final OrderService orderService;
+    private final FeedbackService feedbackService;
 
     private Shop getShop() {
         User user = (User) authenticatedManager.getAuthenticatedUser();
@@ -244,8 +248,7 @@ public class ShopController {
     }
 
     @GetMapping("/category/all")
-    public ResponseEntity<List<CategoryDTO>> getCategoryInShop()
-    {
+    public ResponseEntity<List<CategoryDTO>> getCategoryInShop() {
         Shop shop = getShop();
         if (shop == null) {
             return ResponseEntity.badRequest().build();
@@ -260,8 +263,7 @@ public class ShopController {
     }
 
     @GetMapping("/category/revenue")
-    public ResponseEntity<List<Integer>> getRevenueOfCategoryInShop()
-    {
+    public ResponseEntity<List<Integer>> getRevenueOfCategoryInShop() {
         Shop shop = getShop();
         if (shop == null) {
             return ResponseEntity.badRequest().build();
@@ -273,8 +275,7 @@ public class ShopController {
     }
 
     @GetMapping("/revenue/real-time")
-    public ResponseEntity<List<Integer>> getRevenueInDay()
-    {
+    public ResponseEntity<List<Integer>> getRevenueInDay() {
         Shop shop = getShop();
         if (shop == null) {
             return ResponseEntity.badRequest().build();
@@ -288,15 +289,13 @@ public class ShopController {
         int revenueCurDay = 0;
         int revenuePrevDay = 0;
 
-        for(Integer i : curDay)
-        {
+        for (Integer i : curDay) {
             if (i == null) i = 0;
             revenueCurDay += i;
         }
         revenues.add(revenueCurDay);
 
-        for(Integer i : prevDay)
-        {
+        for (Integer i : prevDay) {
             if (i == null) i = 0;
             revenuePrevDay += i;
         }
@@ -306,8 +305,7 @@ public class ShopController {
     }
 
     @PostMapping("/order/confirm/{id}")
-    public ResponseEntity<String> confirmOrder(@PathVariable("id") String orderId)
-    {
+    public ResponseEntity<String> confirmOrder(@PathVariable("id") String orderId) {
         Shop shop = getShop();
         if (shop == null) {
             return ResponseEntity.badRequest().build();
@@ -320,8 +318,7 @@ public class ShopController {
     }
 
     @PostMapping("/order/reject/{id}")
-    public ResponseEntity<String> rejectOrder(@PathVariable("id") String orderId)
-    {
+    public ResponseEntity<String> rejectOrder(@PathVariable("id") String orderId) {
         Shop shop = getShop();
         if (shop == null) {
             return ResponseEntity.badRequest().build();
@@ -331,5 +328,65 @@ public class ShopController {
         order.setStatus(OrderStatus.CANCELLED);
         orderService.save(order);
         return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/order/special/process/{id}")
+    public ResponseEntity<String> confirmSpecialOrder(
+            @PathVariable("id") String orderId,
+            @RequestParam("shippingFee") Optional<Integer> sF,
+            @RequestParam("action") String action
+    ) {
+        Shop shop = getShop();
+        Order order = orderService.getById(orderId);
+        if (shop == null || order == null) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        Integer shippingFee = sF.orElse(0);
+        order.setShippingFee(shippingFee);
+
+        if (action.equals("CONFIRM"))
+        {
+            order.setStatus(OrderStatus.SPECIAL_USER);
+        }
+
+        if (action.equals("REJECT"))
+        {
+            order.setStatus(OrderStatus.CANCELLED);
+        }
+
+        orderService.save(order);
+        return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/notifications")
+    public ResponseEntity<List<Notification>> getNotification() {
+        Shop shop = getShop();
+        if (shop == null) {
+            return ResponseEntity.badRequest().build();
+        }
+        return ResponseEntity.ok().body(shop.getNotifications());
+    }
+
+    @GetMapping("/feedbacks")
+    public ResponseEntity<List<FeedbackDTO>> getFeedback(
+            @RequestParam("rate") Integer rate,
+            @RequestParam("page") Optional<Integer> pg
+    ) {
+        Shop shop = getShop();
+        if (shop == null) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        Integer page = pg.orElse(1) - 1;
+        List<Feedback> feedbacks = null;
+        if (rate == null) {
+            feedbacks = feedbackService.getByShop(shop, page);
+        } else feedbacks = feedbackService.getByShopAndRate(shop, rate, page);
+
+        List<FeedbackDTO> feedbackDtos = feedbacks.stream()
+                .map(it -> it.toDto())
+                .toList();
+        return ResponseEntity.ok().body(feedbackDtos);
     }
 }

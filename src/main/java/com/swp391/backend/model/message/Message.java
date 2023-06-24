@@ -1,11 +1,14 @@
 package com.swp391.backend.model.message;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.swp391.backend.model.conversation.Conversation;
+import com.swp391.backend.model.messageImage.MessageImage;
 import lombok.*;
 
 import jakarta.persistence.*;
 import java.util.Date;
+import java.util.List;
 
 @Getter
 @Setter
@@ -24,6 +27,16 @@ public class Message {
     private Integer senderId;
     private Integer conId;
     private String content;
+
+    @Enumerated(EnumType.STRING)
+    private MessageType type;
+
+    @OneToMany(mappedBy = "message")
+    @JsonManagedReference
+    private List<MessageImage> images;
+
+    private String video;
+
     private Date sendTime;
 
     @ManyToOne

@@ -25,6 +25,8 @@ import com.swp391.backend.model.categoryGroup.CategoryGroupService;
 import com.swp391.backend.model.categoryGroup.CategoryGroupSold;
 import com.swp391.backend.model.district.District;
 import com.swp391.backend.model.district.DistrictService;
+import com.swp391.backend.model.message.Message;
+import com.swp391.backend.model.message.MessageService;
 import com.swp391.backend.model.notification.Notification;
 import com.swp391.backend.model.notification.NotificationService;
 import com.swp391.backend.model.order.Order;
@@ -75,6 +77,7 @@ import com.swp391.backend.utils.storage.StorageService;
 import lombok.RequiredArgsConstructor;
 import org.aspectj.weaver.ast.Not;
 import org.aspectj.weaver.ast.Or;
+import org.checkerframework.checker.nullness.Opt;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.io.Resource;
@@ -108,6 +111,7 @@ public class PublicController {
     private final NotificationService notificationService;
     private final SubscriptionService subscriptionService;
     private final FeedbackReplyService feedbackReplyService;
+    private final MessageService messageService;
 
     @Autowired
     private Gson gsonUtils;
@@ -130,6 +134,14 @@ public class PublicController {
     @Autowired
     @Qualifier(value = "productFeedbackImage")
     private StorageService productFeedbackImageStorageService;
+
+    @Autowired
+    @Qualifier(value = "messageImage")
+    private StorageService messageImageStorageService;
+
+    @Autowired
+    @Qualifier(value = "messageVideo")
+    private StorageService messageVideoStorageService;
 
     @GetMapping("/user/avatar/{email}")
     public ResponseEntity<Resource> getProductImage(@PathVariable("email") String email) {
@@ -313,8 +325,13 @@ public class PublicController {
     }
 
     @GetMapping("/product/{id}")
-    public ResponseEntity<ProductDTO> productDetail(@PathVariable("id") Optional<Integer> id) {
+    public ResponseEntity<ProductDTO> productDetail(
+            @PathVariable("id") Optional<Integer> id,
+            @RequestParam("page")Optional<Integer> pg
+            ) {
         Integer pid = id.orElse(1);
+        Integer page = pg.orElse(1) - 1;
+
         var p = productService.getProductById(pid);
         var cg = categoryGroupService.getCategoryGroupById(p.getCategoryGroup().getId());
         var shop = shopService.getShopById(p.getShop().getId());
@@ -334,8 +351,8 @@ public class PublicController {
                     }
                 }).collect(Collectors.toList());
 
-
-        var feedbacks = p.getFeedbacks().stream()
+        var feedbacks = feedbackService.getByProduct(p, page)
+                .stream()
                 .map(i -> i.toDto())
                 .collect(Collectors.toList());
 
@@ -469,33 +486,6 @@ public class PublicController {
         Shop shop = shopService.getShopById(shopId);
         return orderService.getNumberOfOrderAnalystInMonth(shop);
     }
-
-    @GetMapping("/subscription/{shop_id}")
-    public ResponseEntity<Subscription> subscribeShop(@PathVariable("shop_id") Integer shopId) {
-        User user = (User) userService.loadUserByUsername("tranthienthanhbao@gmail.com");
-        Shop shop = shopService.getShopById(shopId);
-
-        if (shop == null) return ResponseEntity.badRequest().build();
-
-        SubscriptionId id = new SubscriptionId();
-        id.setShopId(shop.getId());
-        id.setUserId(user.getId());
-
-        Subscription subscription = Subscription.builder()
-                .id(id)
-                .shop(shop)
-                .user(user)
-                .build();
-        subscription = subscriptionService.save(subscription);
-
-        return ResponseEntity.ok().body(subscription);
-    }
-
-//    @GetMapping("/orders/analyst/day")
-//    public List<Integer> getNewOrdersAnalystInDay()
-//    {
-//
-//    }
 
     @GetMapping("/product/image/{id}")
     public ResponseEntity<Resource> getProductImage(@PathVariable("id") Integer id, @RequestParam("imgId") Optional<Integer> imgId) {
@@ -696,5 +686,33 @@ public class PublicController {
     @GetMapping("/test/cate/{id}")
     public List<CategoryGroupSold> getTest(@PathVariable("id") Integer shopId) {
         return categoryGroupService.getTopThreeSoldCategoryGroupInDay(shopService.getShopById(2));
+    }
+
+    @GetMapping("/message/image/{id}")
+    public ResponseEntity<Resource> getMessageImage(@PathVariable("id") Integer id, @RequestParam("imgId") Optional<Integer> imgId) {
+        Message message = messageService.getById(id);
+        if (message != null) {
+            String image = message.getId() + "/" + imgId.orElse(1) + ".jpg";
+            Resource file = messageImageStorageService.loadAsResource(image);
+            HttpHeaders header = new HttpHeaders();
+            header.set(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + file.getFilename() + "\"");
+            header.set(HttpHeaders.CONTENT_TYPE, "image/jpeg");
+            return ResponseEntity.ok().headers(header).body(file);
+        }
+        return ResponseEntity.badRequest().build();
+    }
+
+    @GetMapping("/message/video/{id}")
+    public ResponseEntity<Resource> getMessageVideo(@PathVariable("id") Integer id) {
+        Message message = messageService.getById(id);
+        if (message != null) {
+            String video = message.getId() + ".mp4";
+            Resource file = messageVideoStorageService.loadAsResource(video);
+            HttpHeaders header = new HttpHeaders();
+            header.set(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + file.getFilename() + "\"");
+            header.set(HttpHeaders.CONTENT_TYPE, "video/mp4");
+            return ResponseEntity.ok().headers(header).body(file);
+        }
+        return ResponseEntity.badRequest().build();
     }
 }

@@ -14,6 +14,9 @@ public class StorageProperties {
 	private String productFeedbackImageLocation = "products/feedbacks/image";
 	private String productFeedbackVideoLocation = "products/feedbacks/video";
 
+	private String messageImageLocation = "messages/image";
+	private String messageVideoLocation = "messages/video";
+
 	public String getAvatarLocation() {
 		return avatarLocation;
 	}
@@ -21,5 +24,8 @@ public class StorageProperties {
 	public String getProductVideoLocation() { return productVideoLocation;}
 	public String getProductFeedbackImageLocation() { return productFeedbackImageLocation;}
 	public String getProductFeedbackVideoLocation() { return productFeedbackVideoLocation;}
+
+	public String getMessageImageLocation() { return messageImageLocation;}
+	public String getMessageVideoLocation() { return messageVideoLocation;}
 
 }

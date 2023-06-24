@@ -241,7 +241,7 @@ public class OrderService {
         int prev = beginYearRange;
         for (int i = beginYearRange; i <= endYearRange; i += 1)
         {
-            Integer num = orderRepository.getRevenueAnalystByYearRange(shop.getId(), prev, i);
+            Integer num = orderRepository.getRevenueAnalystByYearRange(shop, prev, i);
             rs.add(num);
             prev = i;
         }

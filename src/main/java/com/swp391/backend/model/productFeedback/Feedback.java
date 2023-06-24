@@ -49,6 +49,7 @@ public class Feedback {
 
     public FeedbackDTO toDto() {
         return FeedbackDTO.builder()
+                .userId(user.getId())
                 .userName(user.getFirstname() + " " + user.getLastname())
                 .userImageUrl(user.getImageurl())
                 .time(time)

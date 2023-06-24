@@ -22,6 +22,7 @@ public class Cart {
     private Integer id;
 
     @OneToOne(mappedBy = "cart")
+    @JsonBackReference
     private User user;
 
     @OneToMany(mappedBy = "cart")

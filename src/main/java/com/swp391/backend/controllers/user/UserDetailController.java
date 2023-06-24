@@ -14,6 +14,9 @@ import com.swp391.backend.model.cartProduct.CartProductKey;
 import com.swp391.backend.model.cartProduct.CartProductService;
 import com.swp391.backend.model.district.District;
 import com.swp391.backend.model.district.DistrictService;
+import com.swp391.backend.model.notification.Notification;
+import com.swp391.backend.model.notification.NotificationService;
+import com.swp391.backend.model.notification.NotificationType;
 import com.swp391.backend.model.order.Order;
 import com.swp391.backend.model.order.OrderService;
 import com.swp391.backend.model.order.OrderStatus;
@@ -90,6 +93,7 @@ public class UserDetailController {
     private final SubscriptionService subscriptionService;
     private final OrderService orderService;
     private final OrderDetailsService orderDetailsService;
+    private final NotificationService notificationService;
 
     @GetMapping("/info")
     public ResponseEntity<UserDTO> loginUserInfo() {
@@ -256,6 +260,17 @@ public class UserDetailController {
                 .user(user)
                 .build();
         subscription = subscriptionService.save(subscription);
+
+        Notification notification = Notification.builder()
+                .title("Your shop just gained a new following")
+                .content(String.format("Customer %s just followed your shop. Congratulations on your new follower!", user.getFirstname()))
+                .imageUrl(user.getImageurl())
+                .type(NotificationType.SUBSCRIPTION)
+                .shop(shop)
+                .createdAt(new Date())
+                .read(false)
+                .build();
+        notificationService.save(notification);
 
         return ResponseEntity.ok().body(subscription);
     }
@@ -453,4 +468,79 @@ public class UserDetailController {
             order.setSellPrice(order.getSellPrice() + 20);
         });
     }
+
+    @PostMapping("/order/special/create")
+    public void createSpecialOrder(@RequestBody Integer productId, @RequestParam("quantity") Optional<Integer> quan)
+    {
+        User user = (User) authenticatedManager.getAuthenticatedUser();
+        Product product = productService.getProductById(productId);
+        if (product.getCategoryGroup().getCategory().getId() != 1)
+        {
+
+        }
+
+        Shop shop = shopService.getShopById(product.getShop().getId());
+        Integer quantity = quan.orElse(1);
+
+        Order order = Order.builder()
+                .id(generateOrderId(shop.toDto()))
+                .user(user)
+                .status(OrderStatus.SPECIAL_SHOP)
+                .payment("COD")
+                .description(product.getDescription().substring(0, 150))
+                .shop(shop)
+                .createdTime(new Date())
+                .build();
+
+        orderService.save(order);
+
+        OrderDetailsId id = new OrderDetailsId();
+        id.setOrderId(order.getId());
+        id.setProductId(product.getId());
+
+        OrderDetails orderDetails = OrderDetails.builder()
+                .product(product)
+                .quantity(quantity)
+                .order(order)
+                .id(id)
+                .build();
+        orderDetailsService.save(orderDetails);
+
+        product.setAvailable(product.getAvailable() - 1);
+        productService.save(product);
+    }
+
+    @PostMapping("/order/special/process/{id}")
+    public ResponseEntity<String> processSpecialOrder(
+            @PathVariable("id") String orderId,
+            @RequestParam("action") String action
+    ) {
+
+        Order order = orderService.getById(orderId);
+        if (order == null) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        if (action.equals("CONFIRM"))
+        {
+            order.setStatus(OrderStatus.SHIPPING);
+        }
+
+        if (action.equals("REJECT"))
+        {
+            order.setStatus(OrderStatus.CANCELLED);
+        }
+
+        orderService.save(order);
+        return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/notifications")
+    public List<Notification> getNotification()
+    {
+        User user = (User) authenticatedManager.getAuthenticatedUser();
+        return user.getNotifications();
+    }
+
+
 }

@@ -5,5 +5,7 @@ public enum OrderStatus{
     COMPLETED,
     SHIPPING,
     CANCELLED,
-    CONTACT
+    CONTACT,
+    SPECIAL_SHOP,
+    SPECIAL_USER
 }

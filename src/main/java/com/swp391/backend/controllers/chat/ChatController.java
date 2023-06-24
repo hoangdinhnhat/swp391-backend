@@ -1,27 +1,42 @@
 package com.swp391.backend.controllers.chat;
 
+import com.google.gson.Gson;
 import com.swp391.backend.controllers.authentication.AuthenticatedManager;
+import com.swp391.backend.controllers.publics.ProductRequest;
 import com.swp391.backend.model.ConversationChatter.ConversationChatter;
 import com.swp391.backend.model.ConversationChatter.ConversationChatterService;
 import com.swp391.backend.model.conversation.Conversation;
 import com.swp391.backend.model.conversation.ConversationService;
 import com.swp391.backend.model.message.Message;
 import com.swp391.backend.model.message.MessageService;
+import com.swp391.backend.model.message.MessageType;
+import com.swp391.backend.model.messageImage.MessageImage;
+import com.swp391.backend.model.messageImage.MessageImageService;
 import com.swp391.backend.model.shop.Shop;
 import com.swp391.backend.model.shop.ShopService;
 import com.swp391.backend.model.user.User;
 import com.swp391.backend.model.user.UserService;
+import com.swp391.backend.utils.storage.MessageImageStorageService;
+import com.swp391.backend.utils.storage.MessageVideoStorageService;
+import com.swp391.backend.utils.storage.StorageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.http.ResponseEntity;
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Controller
@@ -47,6 +62,24 @@ public class ChatController {
 
     @Autowired
     private MessageService messageService;
+
+    @Autowired
+    @Qualifier(value = "productVideo")
+    private StorageService productVideoStorageService;
+
+    @Autowired
+    private Gson gsonUtils;
+
+    @Autowired
+    private MessageImageService messageImageService;
+
+    @Autowired
+    @Qualifier(value = "messageImage")
+    private StorageService messageImageStorageService;
+
+    @Autowired
+    @Qualifier(value = "messageVideo")
+    private StorageService messageVideoStorageService;
 
     @MessageMapping("/personal")
     @Transactional
@@ -82,6 +115,66 @@ public class ChatController {
         String des = "/conversation/" + request.getConversationId();
         simpMessagingTemplate.convertAndSend(des, message);
         return message;
+    }
+
+    @PostMapping("app/media-message")
+    public ResponseEntity<String> mediaMessage(
+            @RequestParam("message") String jsonRequest,
+            @RequestParam("images") Optional<MultipartFile []> imgs,
+            @RequestParam("videos") Optional<MultipartFile []> vds
+    )
+    {
+        var request = gsonUtils.fromJson(jsonRequest, MessageRequest.class);
+        if (request.getContent().length() > 0)
+        {
+            Message message = chatService.sendMessage(request);
+            String des = "/conversation/" + request.getConversationId();
+            simpMessagingTemplate.convertAndSend(des, message);
+        }
+
+        MultipartFile [] images = imgs.orElse(null);
+        if (images != null)
+        {
+            Message message = chatService.sendMediaMessage(request, MessageType.IMAGES);
+
+            int count = 0;
+            var services = (MessageImageStorageService) messageImageStorageService;
+            List<MessageImage> messageImages = new ArrayList<>();
+            for (MultipartFile image: images)
+            {
+                count++;
+                services.store(image, message.getId().toString(), count + ".jpg");
+                var mI = MessageImage.builder()
+                        .message(message)
+                        .url("/api/v1/publics/message/image/" + message.getId() + "?imgId=" + count)
+                        .build();
+                messageImages.add(mI);
+                messageImageService.save(mI);
+            }
+
+            message.setImages(messageImages);
+            String des = "/conversation/" + request.getConversationId();
+            System.out.println(message);
+            simpMessagingTemplate.convertAndSend(des, message);
+        }
+
+        MultipartFile [] videos = vds.orElse(null);
+        if (videos != null)
+        {
+            var services = messageVideoStorageService;
+            for (MultipartFile video : videos)
+            {
+                Message message = chatService.sendMediaMessage(request, MessageType.VIDEO);
+                services.store(video, message.getId() + ".mp4");
+                message.setVideo("/api/v1/publics/message/video/" + message.getId());
+
+                message = messageService.save(message);
+                String des = "/conversation/" + request.getConversationId();
+                simpMessagingTemplate.convertAndSend(des, message);
+            }
+        }
+
+        return ResponseEntity.ok().build();
     }
 
     public boolean isConnect (User user, Shop shop)

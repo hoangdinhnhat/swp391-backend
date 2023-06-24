@@ -71,6 +71,7 @@ public class User implements UserDetails{
 
     @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "cart_id", referencedColumnName = "id")
+    @JsonManagedReference
     private Cart cart;
     
     private int wrongpasswordcounter = 0;

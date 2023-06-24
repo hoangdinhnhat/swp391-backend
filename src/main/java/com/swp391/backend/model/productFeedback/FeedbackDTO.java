@@ -18,6 +18,7 @@ import java.util.List;
 @Setter
 @Builder
 public class FeedbackDTO {
+    private Integer userId;
     private String userName;
     private String userImageUrl;
     private Date time;

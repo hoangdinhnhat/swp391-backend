@@ -126,14 +126,13 @@ public interface OrderRepository extends PagingAndSortingRepository<Order, Strin
     Integer getRevenueAnalystByMonthRange(Integer shopId, Integer beginMonthRange, Integer endMonthRange);
 
     @Query(
-            value = "SELECT SUM(o.real_price)\n" +
-                    "FROM _order o\n" +
+            value = "SELECT SUM(o.realPrice)\n" +
+                    "FROM Order o\n" +
                     "WHERE\n" +
-                    "   o.shop_id = ?1\n" +
-                    "   AND EXTRACT(YEAR FROM o.created_time) >= ?2\n" +
-                    "   AND EXTRACT(YEAR FROM o.created_time) <= ?3",
-            nativeQuery = true)
-    Integer getRevenueAnalystByYearRange(Integer shopId, Integer beginYearRange, Integer endYearRange);
+                    "   o.shop = ?1\n" +
+                    "   AND EXTRACT(YEAR FROM o.createdTime) >= ?2\n" +
+                    "   AND EXTRACT(YEAR FROM o.createdTime) <= ?3")
+    Integer getRevenueAnalystByYearRange(Shop shop, Integer beginYearRange, Integer endYearRange);
 
     List<Order> findByShopAndIdContainingIgnoreCase(Shop shop, String id, Pageable pageable);
 

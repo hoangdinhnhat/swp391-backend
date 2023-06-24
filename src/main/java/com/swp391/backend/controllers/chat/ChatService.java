@@ -10,6 +10,7 @@ import com.swp391.backend.model.conversation.Conversation;
 import com.swp391.backend.model.conversation.ConversationService;
 import com.swp391.backend.model.message.Message;
 import com.swp391.backend.model.message.MessageService;
+import com.swp391.backend.model.message.MessageType;
 import com.swp391.backend.model.shop.Shop;
 import com.swp391.backend.model.shop.ShopDTO;
 import com.swp391.backend.model.shop.ShopService;
@@ -62,6 +63,7 @@ public class ChatService {
                 .senderId(user.getId())
                 .conId(conversation.getId())
                 .content("Hello shop. Con legion 5 còn không ạ?")
+                .type(MessageType.TEXT)
                 .sendTime(new Date())
                 .conversation(conversation)
                 .build();
@@ -72,6 +74,7 @@ public class ChatService {
                 .senderId(shop.getId())
                 .conId(conversation.getId())
                 .content("Chào bạn. Legion 5 hiện đang còn hàng bạn nhé!")
+                .type(MessageType.TEXT)
                 .sendTime(new Date())
                 .conversation(conversation)
                 .build();
@@ -82,6 +85,7 @@ public class ChatService {
                 .senderId(shop.getId())
                 .conId(conversation.getId())
                 .content("Nếu bạn có nhu cầu thì hãy để lại thông tin để shop tư vấn cho bạn 1 cách sớm nhất nhé!")
+                .type(MessageType.TEXT)
                 .sendTime(new Date())
                 .conversation(conversation)
                 .build();
@@ -106,6 +110,7 @@ public class ChatService {
                     .senderId(user.getId())
                     .conId(conversation.getId())
                     .content(request.getContent())
+                    .type(MessageType.TEXT)
                     .sendTime(request.getSendTime())
                     .conversation(conversation)
                     .build();
@@ -122,6 +127,46 @@ public class ChatService {
                     .senderId(shop.getId())
                     .conId(conversation.getId())
                     .content(request.getContent())
+                    .type(MessageType.TEXT)
+                    .sendTime(request.getSendTime())
+                    .conversation(conversation)
+                    .build();
+
+            messageService.save(message);
+        }
+        return message;
+    }
+
+    public Message sendMediaMessage(MessageRequest request, MessageType messageType)
+    {
+        Message message = null;
+        if (request.getChatterType().equals("USER"))
+        {
+            User user = (User) userService.getById(request.getFromId());
+            Conversation conversation = conversationService.getById(request.getConversationId());
+
+            message = Message.builder()
+                    .senderImage(user.getImageurl())
+                    .senderType("USER")
+                    .senderId(user.getId())
+                    .conId(conversation.getId())
+                    .type(messageType)
+                    .sendTime(request.getSendTime())
+                    .conversation(conversation)
+                    .build();
+
+            messageService.save(message);
+        }else if (request.getChatterType().equals("SHOP"))
+        {
+            Shop shop = shopService.getShopById(request.getFromId());
+            Conversation conversation = conversationService.getById(request.getConversationId());
+
+            message = Message.builder()
+                    .senderImage(shop.getShopImage())
+                    .senderType("SHOP")
+                    .senderId(shop.getId())
+                    .conId(conversation.getId())
+                    .type(messageType)
                     .sendTime(request.getSendTime())
                     .conversation(conversation)
                     .build();

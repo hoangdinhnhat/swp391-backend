@@ -16,6 +16,7 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class FeedbackService {
+
     private final FeedbackRepository feedbackRepository;
     private final ProductRepository productRepository;
     private final ShopRepository shopRepository;
@@ -50,6 +51,18 @@ public class FeedbackService {
     {
         Pageable pageable = PageRequest.of(page, 3, Sort.by("time").descending());
         return feedbackRepository.findByProductAndRate(product, rate, pageable);
+    }
+
+    public List<Feedback> getByShop(Shop shop, Integer page)
+    {
+        Pageable pageable = PageRequest.of(page, 3, Sort.by("time").descending());
+        return feedbackRepository.findByShop(shop, pageable);
+    }
+
+    public List<Feedback> getByShopAndRate(Shop shop, Integer rate, Integer page)
+    {
+        Pageable pageable = PageRequest.of(page, 3, Sort.by("time").descending());
+        return feedbackRepository.findByShopAndRate(shop, rate, pageable);
     }
 
     public Feedback getById(Integer id)
