@@ -3,20 +3,22 @@ package com.swp391.backend.controllers.shop;
 import com.google.gson.Gson;
 import com.swp391.backend.controllers.authentication.AuthenticatedManager;
 import com.swp391.backend.controllers.publics.ProductRequest;
-import com.swp391.backend.model.category.Category;
 import com.swp391.backend.model.category.CategoryDTO;
 import com.swp391.backend.model.category.CategoryService;
 import com.swp391.backend.model.categoryDetailInfo.CategoryDetailInfo;
 import com.swp391.backend.model.categoryDetailInfo.CategoryDetailInfoService;
 import com.swp391.backend.model.categoryGroup.CategoryGroup;
 import com.swp391.backend.model.categoryGroup.CategoryGroupService;
+import com.swp391.backend.model.counter.CounterService;
 import com.swp391.backend.model.district.District;
 import com.swp391.backend.model.district.DistrictService;
 import com.swp391.backend.model.notification.Notification;
 import com.swp391.backend.model.notification.NotificationService;
 import com.swp391.backend.model.order.Order;
+import com.swp391.backend.model.order.OrderDTO;
 import com.swp391.backend.model.order.OrderService;
 import com.swp391.backend.model.order.OrderStatus;
+import com.swp391.backend.model.orderDetails.OrderDetailsService;
 import com.swp391.backend.model.product.Product;
 import com.swp391.backend.model.product.ProductService;
 import com.swp391.backend.model.productDetailInfo.ProductDetailInfo;
@@ -24,49 +26,43 @@ import com.swp391.backend.model.productDetailInfo.ProductDetailInfoService;
 import com.swp391.backend.model.productFeedback.Feedback;
 import com.swp391.backend.model.productFeedback.FeedbackDTO;
 import com.swp391.backend.model.productFeedback.FeedbackService;
+import com.swp391.backend.model.productFeedbackReply.FeedbackReply;
+import com.swp391.backend.model.productFeedbackReply.FeedbackReplyService;
 import com.swp391.backend.model.productImage.ProductImage;
 import com.swp391.backend.model.productImage.ProductImageServie;
 import com.swp391.backend.model.province.Province;
 import com.swp391.backend.model.province.ProvinceService;
 import com.swp391.backend.model.shop.Shop;
-import com.swp391.backend.model.shop.ShopDTO;
 import com.swp391.backend.model.shop.ShopService;
 import com.swp391.backend.model.shopAddress.ShopAddress;
 import com.swp391.backend.model.shopAddress.ShopAddressService;
+import com.swp391.backend.model.shopPackage.ShopPackage;
+import com.swp391.backend.model.shopPackage.ShopPackageService;
+import com.swp391.backend.model.shopPlan.ShopPlan;
+import com.swp391.backend.model.shopPlan.ShopPlanService;
+import com.swp391.backend.model.subscription.SubscriptionService;
 import com.swp391.backend.model.user.User;
 import com.swp391.backend.model.ward.Ward;
 import com.swp391.backend.model.ward.WardService;
 import com.swp391.backend.utils.storage.ProductImageStorageService;
 import com.swp391.backend.utils.storage.StorageService;
+import com.swp391.backend.utils.zalopay_gateway.ZaloPayService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.ModelAndView;
 
-import javax.ws.rs.core.Response;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/v1/shop")
 @RequiredArgsConstructor
 public class ShopController {
-
-    @Autowired
-    private Gson gsonUtils;
-
-    @Autowired
-    @Qualifier(value = "productImage")
-    private StorageService productImageStorageService;
-
-    @Autowired
-    @Qualifier(value = "productVideo")
-    private StorageService productVideoStorageService;
 
     private final ProvinceService provinceService;
     private final DistrictService districtService;
@@ -83,6 +79,24 @@ public class ShopController {
     private final CategoryService categoryService;
     private final OrderService orderService;
     private final FeedbackService feedbackService;
+    private final SubscriptionService subscriptionService;
+    private final FeedbackReplyService feedbackReplyService;
+    private final OrderDetailsService orderDetailsService;
+    private final ShopPackageService shopPackageService;
+    private final ShopPlanService shopPlanService;
+    private final CounterService counterService;
+    private final ZaloPayService zaloPayService = ZaloPayService.gI();
+    @Autowired
+    private Gson gsonUtils;
+    @Autowired
+    @Qualifier(value = "avatar")
+    private StorageService storageService;
+    @Autowired
+    @Qualifier(value = "productImage")
+    private StorageService productImageStorageService;
+    @Autowired
+    @Qualifier(value = "productVideo")
+    private StorageService productVideoStorageService;
 
     private Shop getShop() {
         User user = (User) authenticatedManager.getAuthenticatedUser();
@@ -135,9 +149,139 @@ public class ShopController {
                 .shopImage("/api/v1/publics/shop/image/-1")
                 .shopAddress(shopAddress)
                 .joinTime(new Date())
+                .phone(request.getPhone())
                 .build();
 
-        return ResponseEntity.ok().body(shopService.save(shopRequest));
+        Shop savedShop = shopService.save(shopRequest);
+
+        ShopPlan shopPlan = shopPlanService.getByPlan("UNREGISTE");
+        ShopPackage shopPackage = ShopPackage.builder()
+                .shopPlan(shopPlan)
+                .shop(savedShop)
+                .build();
+        shopPackageService.save(shopPackage);
+
+        return ResponseEntity.ok().body(savedShop);
+    }
+
+    @GetMapping("/package/")
+    public ResponseEntity<Boolean> getShopPlan() {
+        Shop shop = getShop();
+        if (shop == null) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        boolean isTrial = shop.getShopPackages()
+                .stream()
+                .anyMatch(pk -> pk.getShopPlan().getPlan().equals("TRIAL"));
+
+        return ResponseEntity.ok().body(isTrial);
+    }
+
+    @GetMapping("/package/check")
+    public ResponseEntity<Boolean> checkShopPackage() {
+        Shop shop = getShop();
+        if (shop == null) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        boolean isValid = shopPackageService.checkShopPackage(shop);
+        return ResponseEntity.ok().body(isValid);
+    }
+
+    @PostMapping("/registe/payment")
+    public ResponseEntity<String> registePayment(@RequestParam("plan") String plan) throws Exception {
+        Shop shop = getShop();
+        if (shop == null) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        boolean isValid = shopPackageService.checkShopPackage(shop);
+        if (isValid) return ResponseEntity.badRequest().build();
+
+        ShopPlan shopPlan = shopPlanService.getByPlan(plan);
+        String gatewayUrl = zaloPayService.createGatewayUrl(shopPlan.getPrice() * 23000, "shop/registe?plan=" + plan);
+        return ResponseEntity.ok().body(gatewayUrl);
+    }
+
+    @PostMapping("/registe/trial")
+    public ResponseEntity<String> registeShopTrial(HttpServletRequest request, @RequestParam("plan") String plan) throws Exception {
+        Shop shop = getShop();
+        if (shop == null) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        boolean isTrial = shop.getShopPackages()
+                .stream()
+                .anyMatch(pk -> pk.getShopPlan().getPlan().equals("FREE TRIAL"));
+        if (isTrial) return ResponseEntity.badRequest().build();
+
+        ShopPlan shopPlan = shopPlanService.getByPlan(plan);
+
+        ShopPackage shopPackage = ShopPackage.builder()
+                .shopPlan(shopPlan)
+                .shop(shop)
+                .build();
+        shopPackageService.save(shopPackage);
+        shopService.save(shop);
+
+        return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/registe")
+    public ModelAndView registeShop(HttpServletRequest request, @RequestParam("plan") String plan) throws Exception {
+        Shop shop = getShop();
+        boolean check = zaloPayService.checkCallback(request);
+        if (shop == null || !check) {
+            return null;
+        }
+
+        ShopPlan shopPlan = shopPlanService.getByPlan(plan);
+
+        var counter = counterService.getById("WALLET");
+        counter.setValue(counter.getValue() + shopPlan.getPrice());
+        counterService.save(counter);
+
+        ShopPackage shopPackage = ShopPackage.builder()
+                .shopPlan(shopPlan)
+                .shop(shop)
+                .build();
+        shopPackageService.save(shopPackage);
+        shopService.save(shop);
+
+        return new ModelAndView("redirect:http://localhost:3000/seller/portal/product/all");
+    }
+
+    @PostMapping("/update")
+    public ResponseEntity<String> updateShopInfo(
+            @RequestParam("image") Optional<MultipartFile> img,
+            @RequestParam("name") Optional<String> name,
+            @RequestParam("phone") Optional<String> phone
+    ) {
+        Shop shop = getShop();
+        if (shop == null) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        var image = img.orElse(null);
+        var shopName = name.orElse(null);
+        var phoneNumber = phone.orElse(null);
+
+        if (image != null) {
+            storageService.store(image, "shop/" + shop.getId() + ".jpg");
+            shop.setShopImage("/api/v1/publics/shop/image/" + shop.getId());
+        }
+
+        if (shopName != null && !shopName.trim().isEmpty()) {
+            shop.setName(shopName);
+        }
+
+        if (phoneNumber != null && !phoneNumber.trim().isEmpty()) {
+            shop.setPhone(phoneNumber);
+        }
+
+        shopService.save(shop);
+        return ResponseEntity.ok().build();
     }
 
     @GetMapping("/products")
@@ -152,12 +296,106 @@ public class ShopController {
         return products;
     }
 
+    @GetMapping("/products/ban")
+    public List<Product> getBanProducts(
+            @RequestParam("page") Optional<Integer> pageId,
+            @RequestParam("filter") Optional<String> flt
+    ) {
+        Shop shop = getShop();
+        Integer page = pageId.orElse(1) - 1;
+        String filter = flt.orElse("default");
+        List<Product> products = productService.getByOwnShopAndBan(shop, page, filter);
+        return products;
+    }
+
+    @GetMapping("/products/update/{id}")
+    public ResponseEntity<String> updateProduct(
+            @PathVariable("id") Integer pId,
+            @RequestParam("product") String jsonRequest,
+            @RequestParam("images") Optional<MultipartFile[]> imgs,
+            @RequestParam("video") Optional<MultipartFile> vd
+    ) {
+        Shop shop = getShop();
+        Product product = productService.getProductById(pId);
+        if (shop == null || product == null) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        var request = gsonUtils.fromJson(jsonRequest, ProductRequest.class);
+
+        product.setName(request.getName());
+        product.setDescription(request.getDescription());
+        product.setPrice(request.getPrice());
+        product.setAvailable(request.getAvailable());
+
+        productService.save(product);
+
+        MultipartFile video = vd.orElse(null);
+        if (video != null) {
+            productVideoStorageService.store(video, product.getId() + ".mp4");
+            product.setVideo("/api/v1/publics/product/video/" + product.getId());
+            productService.save(product);
+        }
+
+        var images = imgs.orElse(null);
+        if (images != null) {
+            int count = 0;
+            var services = (ProductImageStorageService) productImageStorageService;
+            for (MultipartFile image : images) {
+                count++;
+                services.store(image, product.getId().toString(), count + ".jpg");
+                var pI = ProductImage.builder()
+                        .product(product)
+                        .url("/api/v1/publics/product/image/" + product.getId() + "?imgId=" + count)
+                        .build();
+                productImageServie.save(pI);
+            }
+        }
+
+        var categoryDetailInfos = categoryDetailInfoService.getByCategory(product.getCategoryGroup().getCategory());
+        categoryDetailInfos.forEach(it -> {
+            var productDetail = request.getProductDetailRequests()
+                    .stream()
+                    .filter(cc -> cc.getName().equalsIgnoreCase(it.getName()))
+                    .findFirst().orElse(null);
+
+            var pdi = ProductDetailInfo.builder()
+                    .categoryDetailInfo(it)
+                    .value(productDetail.getValue())
+                    .product(product)
+                    .build();
+            productDetailInfoService.save(pdi);
+        });
+
+        shop.getSubscriptions().forEach(it -> {
+            User userr = it.getUser();
+            Notification notification = Notification.builder()
+                    .title(String.format("Shop %s vừa thay đổi thông tin sản phẩm", shop.getName()))
+                    .content(product.getDescription().substring(0, 100))
+                    .imageUrl("/api/v1/publics/product/image/" + product.getId() + "?imgId=1")
+                    .redirectUrl("/product?productId=" + product.getId())
+                    .user(userr)
+                    .createdAt(new Date())
+                    .read(false)
+                    .build();
+            notificationService.save(notification);
+        });
+
+        return ResponseEntity.ok().build();
+    }
+
     @PostMapping("/products/upload")
-    public ResponseEntity<String> uploadProduct(@RequestParam("product") String jsonRequest, @RequestParam("images") MultipartFile[] images, @RequestParam("video") MultipartFile video) {
+    public ResponseEntity<String> uploadProduct(
+            @RequestParam("product") String jsonRequest,
+            @RequestParam("images") MultipartFile[] images,
+            @RequestParam("video") Optional<MultipartFile> vd
+    ) {
         Shop shop = getShop();
         if (shop == null) {
             return ResponseEntity.badRequest().build();
         }
+        boolean isValid = shopPackageService.checkShopPackage(shop);
+        if (!isValid) return ResponseEntity.badRequest().build();
 
         var request = gsonUtils.fromJson(jsonRequest, ProductRequest.class);
         CategoryGroup group = categoryGroupService.getCategoryGroupById(request.getCategoryGroup());
@@ -174,6 +412,7 @@ public class ShopController {
 
         var product = productService.save(productRequest);
 
+        var video = vd.orElse(null);
         if (video != null) {
             productVideoStorageService.store(video, product.getId() + ".mp4");
             product.setVideo("/api/v1/publics/product/video/" + product.getId());
@@ -212,7 +451,8 @@ public class ShopController {
             Notification notification = Notification.builder()
                     .title(String.format("Shop %s vừa upload sản phẩm mới", shop.getName()))
                     .content(product.getDescription().substring(0, 100))
-                    .imageUrl(product.getImages().get(0).getUrl())
+                    .imageUrl("/api/v1/publics/product/image/" + product.getId() + "?imgId=1")
+                    .redirectUrl("/product?productId=" + product.getId())
                     .user(userr)
                     .createdAt(new Date())
                     .read(false)
@@ -224,7 +464,7 @@ public class ShopController {
     }
 
     @GetMapping("/orders/search")
-    public ResponseEntity<List<Order>> searchOrder(
+    public ResponseEntity<List<OrderDTO>> searchOrder(
             @RequestParam("keyword") Optional<String> kw,
             @RequestParam("filter") Optional<OrderStatus> ft,
             @RequestParam("page") Optional<Integer> pg
@@ -237,13 +477,19 @@ public class ShopController {
         String keyword = kw.orElse("");
         OrderStatus filter = ft.orElse(null);
         Integer page = pg.orElse(1) - 1;
-        List<Order> orders = null;
+        List<OrderDTO> orders = null;
         if (filter == null) {
-            orders = orderService.getByShopAndId(shop, keyword, page);
+            orders = orderService.getByShopAndId(shop, keyword, page)
+                    .stream()
+                    .map(it -> it.toDto())
+                    .toList();
             return ResponseEntity.ok().body(orders);
         }
 
-        orders = orderService.getByShopAndStatusAndId(shop, filter, keyword, page);
+        orders = orderService.getByShopAndStatusAndId(shop, filter, keyword, page)
+                .stream()
+                .map(it -> it.toDto())
+                .toList();
         return ResponseEntity.ok().body(orders);
     }
 
@@ -274,34 +520,299 @@ public class ShopController {
         return ResponseEntity.ok().body(revenues);
     }
 
-    @GetMapping("/revenue/real-time")
-    public ResponseEntity<List<Integer>> getRevenueInDay() {
+    @GetMapping("/analyst/real-time")
+    public ResponseEntity<List<RealTimeData>> getRevenueInDay() {
         Shop shop = getShop();
         if (shop == null) {
             return ResponseEntity.badRequest().build();
         }
 
-        List<Integer> revenues = new ArrayList<>();
+        List<RealTimeData> result = new ArrayList<>();
 
         var curDay = orderService.getRevenueAnalystInDay(shop);
         var prevDay = orderService.getRevenueAnalystInPreviousDay(shop);
+        RealTimeData realTimeData = RealTimeData
+                .builder()
+                .prev(prevDay)
+                .cur(curDay)
+                .build();
+        result.add(realTimeData);
 
-        int revenueCurDay = 0;
-        int revenuePrevDay = 0;
+        var curDay2 = orderService.getNumberOfOrderAnalystInDay(shop);
+        var prevDay2 = orderService.getNumberOfOrderAnalystInPreviousDay(shop);
+        RealTimeData realTimeData2 = RealTimeData
+                .builder()
+                .prev(prevDay2)
+                .cur(curDay2)
+                .build();
+        result.add(realTimeData2);
 
-        for (Integer i : curDay) {
-            if (i == null) i = 0;
-            revenueCurDay += i;
+        var curDay3 = subscriptionService.getNumberOfSubscriptionAnalystInDay(shop);
+        var prevDay3 = subscriptionService.getNumberOfSubscriptionAnalystInPreviousDay(shop);
+        RealTimeData realTimeData3 = RealTimeData
+                .builder()
+                .prev(prevDay3)
+                .cur(curDay3)
+                .build();
+        result.add(realTimeData3);
+
+        var curDay4 = feedbackService.getNumberOfFeedbackAnalystInDay(shop);
+        var prevDay4 = feedbackService.getNumberOfFeedbackAnalystInPreviousDay(shop);
+        RealTimeData realTimeData4 = RealTimeData
+                .builder()
+                .prev(prevDay4)
+                .cur(curDay4)
+                .build();
+        result.add(realTimeData4);
+
+        return ResponseEntity.ok().body(result);
+    }
+
+    @GetMapping("/analyst/day")
+    public ResponseEntity<List<RealTimeData>> getAnalystInDay() {
+        Shop shop = getShop();
+        if (shop == null) {
+            return ResponseEntity.badRequest().build();
         }
-        revenues.add(revenueCurDay);
 
-        for (Integer i : prevDay) {
-            if (i == null) i = 0;
-            revenuePrevDay += i;
+        List<RealTimeData> result = new ArrayList<>();
+
+        var curDay = orderService.getRevenueAnalystInDay(shop);
+        var prevDay = orderService.getRevenueAnalystInPreviousDay(shop);
+        RealTimeData realTimeData = RealTimeData
+                .builder()
+                .prev(prevDay)
+                .cur(curDay)
+                .build();
+        result.add(realTimeData);
+
+        var curDay2 = orderDetailsService.getNumberOfSoldProductAnalystInDay(shop);
+        var prevDay2 = orderDetailsService.getNumberOfSoldProductAnalystInPreviousDay(shop);
+        RealTimeData realTimeData2 = RealTimeData
+                .builder()
+                .prev(prevDay2)
+                .cur(curDay2)
+                .build();
+        result.add(realTimeData2);
+
+        var curDay3 = orderService.getNumberOfOrderAnalystInDay(shop);
+        var prevDay3 = orderService.getNumberOfOrderAnalystInPreviousDay(shop);
+        RealTimeData realTimeData3 = RealTimeData
+                .builder()
+                .prev(prevDay3)
+                .cur(curDay3)
+                .build();
+        result.add(realTimeData3);
+
+        var curDay4 = subscriptionService.getNumberOfSubscriptionAnalystInDay(shop);
+        var prevDay4 = subscriptionService.getNumberOfSubscriptionAnalystInPreviousDay(shop);
+        RealTimeData realTimeData4 = RealTimeData
+                .builder()
+                .prev(prevDay4)
+                .cur(curDay4)
+                .build();
+        result.add(realTimeData4);
+
+        var curDay5 = feedbackService.getNumberOfFeedbackAnalystInDay(shop);
+        var prevDay5 = feedbackService.getNumberOfFeedbackAnalystInPreviousDay(shop);
+        RealTimeData realTimeData5 = RealTimeData
+                .builder()
+                .prev(prevDay5)
+                .cur(curDay5)
+                .build();
+        result.add(realTimeData5);
+
+        return ResponseEntity.ok().body(result);
+    }
+
+    @GetMapping("/analyst/week")
+    public ResponseEntity<List<RealTimeData>> getAnalystInWeek() {
+
+        Shop shop = getShop();
+        if (shop == null) {
+            return ResponseEntity.badRequest().build();
         }
-        revenues.add(revenuePrevDay);
 
-        return ResponseEntity.ok().body(revenues);
+        List<RealTimeData> result = new ArrayList<>();
+
+        var curWeek = orderService.getRevenueAnalystInWeek(shop);
+        var prevWeek = orderService.getRevenueAnalystInPreviousWeek(shop);
+        RealTimeData realTimeData = RealTimeData
+                .builder()
+                .prev(prevWeek)
+                .cur(curWeek)
+                .build();
+        result.add(realTimeData);
+
+        var curDay2 = orderDetailsService.getNumberOfSoldProductAnalystInWeek(shop);
+        var prevDay2 = orderDetailsService.getNumberOfSoldProductAnalystInPreviousWeek(shop);
+        RealTimeData realTimeData2 = RealTimeData
+                .builder()
+                .prev(prevDay2)
+                .cur(curDay2)
+                .build();
+        result.add(realTimeData2);
+
+        var curWeek3 = orderService.getNumberOfOrderAnalystInWeek(shop);
+        var prevWeek3 = orderService.getNumberOfOrderAnalystInPreviousWeek(shop);
+        RealTimeData realTimeData3 = RealTimeData
+                .builder()
+                .prev(prevWeek3)
+                .cur(curWeek3)
+                .build();
+        result.add(realTimeData3);
+
+        var curWeek4 = subscriptionService.getNumberOfSubscriptionAnalystInWeek(shop);
+        var prevWeek4 = subscriptionService.getNumberOfSubscriptionAnalystInPreviousWeek(shop);
+        RealTimeData realTimeData4 = RealTimeData
+                .builder()
+                .prev(prevWeek4)
+                .cur(curWeek4)
+                .build();
+        result.add(realTimeData4);
+
+        var curDay5 = feedbackService.getNumberOfFeedbackAnalystInWeek(shop);
+        var prevDay5 = feedbackService.getNumberOfFeedbackAnalystInPreviousWeek(shop);
+        RealTimeData realTimeData5 = RealTimeData
+                .builder()
+                .prev(prevDay5)
+                .cur(curDay5)
+                .build();
+        result.add(realTimeData5);
+
+        return ResponseEntity.ok().body(result);
+    }
+
+    @GetMapping("/analyst/month")
+    public ResponseEntity<List<RealTimeData>> getAnalystInMonth() {
+        Shop shop = getShop();
+        if (shop == null) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        List<RealTimeData> result = new ArrayList<>();
+
+        var curWeek = orderService.getRevenueAnalystInMonth(shop);
+        var prevWeek = orderService.getRevenueAnalystInPreviousMonth(shop);
+        RealTimeData realTimeData = RealTimeData
+                .builder()
+                .prev(prevWeek)
+                .cur(curWeek)
+                .build();
+        result.add(realTimeData);
+
+        var curDay2 = orderDetailsService.getNumberOfSoldProductAnalystInMonth(shop);
+        var prevDay2 = orderDetailsService.getNumberOfSoldProductAnalystInPreviousMonth(shop);
+        RealTimeData realTimeData2 = RealTimeData
+                .builder()
+                .prev(prevDay2)
+                .cur(curDay2)
+                .build();
+        result.add(realTimeData2);
+
+        var curWeek3 = orderService.getNumberOfOrderAnalystInMonth(shop);
+        var prevWeek3 = orderService.getNumberOfOrderAnalystInPreviousMonth(shop);
+        RealTimeData realTimeData3 = RealTimeData
+                .builder()
+                .prev(prevWeek3)
+                .cur(curWeek3)
+                .build();
+        result.add(realTimeData3);
+
+        var curWeek4 = subscriptionService.getNumberOfSubscriptionAnalystInMonth(shop);
+        var prevWeek4 = subscriptionService.getNumberOfSubscriptionAnalystInPreviousMonth(shop);
+        RealTimeData realTimeData4 = RealTimeData
+                .builder()
+                .prev(prevWeek4)
+                .cur(curWeek4)
+                .build();
+        result.add(realTimeData4);
+
+        var curDay5 = feedbackService.getNumberOfFeedbackAnalystInMonth(shop);
+        var prevDay5 = feedbackService.getNumberOfFeedbackAnalystInPreviousMonth(shop);
+        RealTimeData realTimeData5 = RealTimeData
+                .builder()
+                .prev(prevDay5)
+                .cur(curDay5)
+                .build();
+        result.add(realTimeData5);
+
+        return ResponseEntity.ok().body(result);
+    }
+
+    @GetMapping("/analyst/year")
+    public ResponseEntity<List<RealTimeData>> getAnalystInYear() {
+        Shop shop = getShop();
+        if (shop == null) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        List<RealTimeData> result = new ArrayList<>();
+
+        var curWeek = orderService.getRevenueAnalystInYear(shop);
+        var prevWeek = orderService.getRevenueAnalystInPreviousYear(shop);
+        RealTimeData realTimeData = RealTimeData
+                .builder()
+                .prev(prevWeek)
+                .cur(curWeek)
+                .build();
+        result.add(realTimeData);
+
+        var curDay2 = orderDetailsService.getNumberOfSoldProductAnalystInYear(shop);
+        var prevDay2 = orderDetailsService.getNumberOfSoldProductAnalystInPreviousYear(shop);
+        RealTimeData realTimeData2 = RealTimeData
+                .builder()
+                .prev(prevDay2)
+                .cur(curDay2)
+                .build();
+        result.add(realTimeData2);
+
+        var curWeek3 = orderService.getNumberOfOrderAnalystInYear(shop);
+        var prevWeek3 = orderService.getRevenueAnalystInPreviousYear(shop);
+        RealTimeData realTimeData3 = RealTimeData
+                .builder()
+                .prev(prevWeek3)
+                .cur(curWeek3)
+                .build();
+        result.add(realTimeData3);
+
+        var curWeek4 = subscriptionService.getNumberOfSubscriptionAnalystInYear(shop);
+        var prevWeek4 = subscriptionService.getNumberOfSubscriptionAnalystInPreviousYear(shop);
+        RealTimeData realTimeData4 = RealTimeData
+                .builder()
+                .prev(prevWeek4)
+                .cur(curWeek4)
+                .build();
+        result.add(realTimeData4);
+
+        var curDay5 = feedbackService.getNumberOfFeedbackAnalystInYear(shop);
+        var prevDay5 = feedbackService.getNumberOfFeedbackAnalystInPreviousYear(shop);
+        RealTimeData realTimeData5 = RealTimeData
+                .builder()
+                .prev(prevDay5)
+                .cur(curDay5)
+                .build();
+        result.add(realTimeData5);
+
+        return ResponseEntity.ok().body(result);
+    }
+
+    @GetMapping("/analyst/constant")
+    public ResponseEntity<Map<String, List<Integer>>> getConstantAnalyst() {
+        Shop shop = getShop();
+        if (shop == null) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        Map<String, List<Integer>> rs = new HashMap<>();
+        List<Integer> categoryQuantity = categoryService.getNumberOfCategoryAnalyst(shop);
+        List<Integer> categoryRevenue = categoryService.getRevenueOfCategoryAnalyst(shop);
+        List<Integer> saleQuantity = orderDetailsService.getNumberOfSoldProductAnalystInYear(shop);
+
+        rs.put("cq", categoryQuantity);
+        rs.put("cr", categoryRevenue);
+        rs.put("sq", saleQuantity);
+        return ResponseEntity.ok().body(rs);
     }
 
     @PostMapping("/order/confirm/{id}")
@@ -312,7 +823,7 @@ public class ShopController {
         }
 
         Order order = orderService.getById(orderId);
-        order.setStatus(OrderStatus.SHIPPING);
+        order.setStatus(OrderStatus.COMPLETED);
         orderService.save(order);
         return ResponseEntity.ok().build();
     }
@@ -343,15 +854,13 @@ public class ShopController {
         }
 
         Integer shippingFee = sF.orElse(0);
-        order.setShippingFee(shippingFee);
 
-        if (action.equals("CONFIRM"))
-        {
+        if (action.equals("CONFIRM")) {
+            order.setShippingFee(shippingFee);
             order.setStatus(OrderStatus.SPECIAL_USER);
         }
 
-        if (action.equals("REJECT"))
-        {
+        if (action.equals("REJECT")) {
             order.setStatus(OrderStatus.CANCELLED);
         }
 
@@ -368,9 +877,37 @@ public class ShopController {
         return ResponseEntity.ok().body(shop.getNotifications());
     }
 
+    @PostMapping("/notification/read/{id}")
+    public ResponseEntity<String> markRead(@PathVariable("id") Integer notiId) {
+        Shop shop = getShop();
+        if (shop == null) {
+            return ResponseEntity.badRequest().build();
+        }
+        Notification notification = notificationService.getById(notiId);
+        notification.setRead(true);
+        notificationService.save(notification);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/notification/read")
+    public ResponseEntity<String> markReadAll() {
+        Shop shop = getShop();
+        if (shop == null) {
+            return ResponseEntity.badRequest().build();
+        }
+        List<Notification> notifications = notificationService.getNotificationByShop(shop).stream()
+                .map(it -> {
+                    it.setRead(true);
+                    return it;
+                })
+                .toList();
+        notificationService.saveAllAndFlush(notifications);
+        return ResponseEntity.ok().build();
+    }
+
     @GetMapping("/feedbacks")
     public ResponseEntity<List<FeedbackDTO>> getFeedback(
-            @RequestParam("rate") Integer rate,
+            @RequestParam("rate") Optional<Integer> rt,
             @RequestParam("page") Optional<Integer> pg
     ) {
         Shop shop = getShop();
@@ -379,6 +916,7 @@ public class ShopController {
         }
 
         Integer page = pg.orElse(1) - 1;
+        Integer rate = rt.orElse(null);
         List<Feedback> feedbacks = null;
         if (rate == null) {
             feedbacks = feedbackService.getByShop(shop, page);
@@ -388,5 +926,35 @@ public class ShopController {
                 .map(it -> it.toDto())
                 .toList();
         return ResponseEntity.ok().body(feedbackDtos);
+    }
+
+    @PostMapping("/feedbacks/response/")
+    public ResponseEntity<String> shopResponseFeedback(@RequestBody ShopResponseRequest request) {
+        Shop shop = getShop();
+        if (shop == null) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        Feedback feedback = feedbackService.getById(request.getFeedbackId());
+
+        var feedbackRep = FeedbackReply.builder()
+                .feedback(feedback)
+                .content(request.getResponse())
+                .build();
+
+        feedbackReplyService.save(feedbackRep);
+
+        Notification notification = Notification.builder()
+                .title(String.format("Shop %s vừa phản hồi feedback của bạn", shop.getName()))
+                .content(request.getResponse())
+                .imageUrl("/api/v1/publics/product/image/" + feedback.getProduct().getId() + "?imgId=1")
+                .redirectUrl("/product?productId=" + feedback.getProduct().getId())
+                .user(feedback.getUser())
+                .createdAt(new Date())
+                .read(false)
+                .build();
+        notificationService.save(notification);
+
+        return ResponseEntity.ok().build();
     }
 }

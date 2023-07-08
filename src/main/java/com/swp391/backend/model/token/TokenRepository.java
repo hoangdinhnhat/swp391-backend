@@ -5,14 +5,14 @@
 package com.swp391.backend.model.token;
 
 import com.swp391.backend.model.user.User;
-import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.Optional;
+
 /**
- *
  * @author Lenovo
  */
-public interface TokenRepository extends JpaRepository<Token, Integer>{
+public interface TokenRepository extends JpaRepository<Token, Integer> {
     Optional<Token> findByUserAndType(User user, String type);
 
     Optional<Token> findByValue(String value);

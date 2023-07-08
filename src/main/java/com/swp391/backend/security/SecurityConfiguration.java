@@ -17,7 +17,6 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 /**
- *
  * @author Lenovo
  */
 @Configuration
@@ -42,8 +41,8 @@ public class SecurityConfiguration {
                 .authorizeHttpRequests(authorize -> authorize
 //                    .requestMatchers("/user/**").hasAuthority("USER")
 //                    .requestMatchers("/admin/**").hasAuthority("ADMIN")
-                    .anyRequest()
-                    .authenticated()
+                                .anyRequest()
+                                .authenticated()
                 )
                 .sessionManagement()
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS)

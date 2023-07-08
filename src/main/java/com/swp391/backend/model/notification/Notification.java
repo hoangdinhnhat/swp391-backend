@@ -32,9 +32,7 @@ public class Notification {
     private String title;
     private String content;
     private String imageUrl;
-
-    @Enumerated(EnumType.STRING)
-    private NotificationType type;
+    private String redirectUrl;
 
     private Integer typeId;
     private Date createdAt;

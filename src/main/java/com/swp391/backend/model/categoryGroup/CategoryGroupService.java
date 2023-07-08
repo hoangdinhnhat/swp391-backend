@@ -2,8 +2,8 @@ package com.swp391.backend.model.categoryGroup;
 
 import com.swp391.backend.model.category.CategoryService;
 import com.swp391.backend.model.product.Product;
+import com.swp391.backend.model.settings.SettingService;
 import com.swp391.backend.model.shop.Shop;
-import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -17,6 +17,7 @@ public class CategoryGroupService {
 
     private final CategoryGroupRepository categoryGroupRepository;
     private final CategoryService categoryService;
+    private final SettingService settingService;
 
     public CategoryGroup getCategoryGroupById(Integer id) {
         return categoryGroupRepository.findById(id).orElse(null);
@@ -30,11 +31,11 @@ public class CategoryGroupService {
         categoryGroupRepository.deleteById(id);
     }
 
-    public List<Product> getProductByCategoryGroups(Product product, List<CategoryGroup> categoryGroups) {
+    public List<Product> getProductByCategoryGroups(Product product, List<CategoryGroup> categoryGroups, Integer num) {
         List<Product> products = new ArrayList<>();
         categoryGroups.forEach(c -> {
             c.getProducts().forEach(it -> {
-                if (products.size() < 6) {
+                if (products.size() < num) {
                     products.add(it);
                 }
             });
@@ -49,8 +50,7 @@ public class CategoryGroupService {
         return products;
     }
 
-    public List<CategoryGroupSold> getTopThreeSoldCategoryGroupInDay(Shop shop)
-    {
+    public List<CategoryGroupSold> getTopThreeSoldCategoryGroupInDay(Shop shop) {
         List<CategoryGroupSold> rs = new ArrayList<>();
         int hourRange = LocalDateTime.now().getHour();
         List<CategoryGroup> categoryGroups = categoryGroupRepository.getTopThreeSoldCategoryGroupByHourRange(shop.getId(), hourRange);

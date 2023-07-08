@@ -17,7 +17,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.stream.Stream;
 
 @Service("productFeedbackImage")
-public class ProductFeedbackImageStorageService implements StorageService{
+public class ProductFeedbackImageStorageService implements StorageService {
     private final Path rootLocation;
     private final StorageProperties storageProperties;
 
@@ -51,14 +51,12 @@ public class ProductFeedbackImageStorageService implements StorageService{
         }
     }
 
-    public void store(MultipartFile file, String folder, String expectedName)
-    {
+    public void store(MultipartFile file, String folder, String expectedName) {
         try {
             String root = storageProperties.getProductFeedbackImageLocation();
             String newFolder = root + "/" + folder;
             Path path = Paths.get(newFolder);
-            if(!Files.exists(path))
-            {
+            if (!Files.exists(path)) {
                 Files.createDirectories(path);
             }
             store(file, folder + "/" + expectedName);

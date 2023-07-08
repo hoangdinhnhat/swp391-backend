@@ -17,7 +17,7 @@ import java.nio.file.StandardCopyOption;
 import java.util.stream.Stream;
 
 @Service("messageVideo")
-public class MessageVideoStorageService implements StorageService{
+public class MessageVideoStorageService implements StorageService {
     private final Path rootLocation;
     private final StorageProperties storageProperties;
 

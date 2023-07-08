@@ -9,13 +9,13 @@ import com.swp391.backend.model.receiveinfo.ReceiveInfo;
 import com.swp391.backend.model.shop.ShopDTO;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
-import java.util.List;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 
+import java.util.List;
+
 /**
- *
  * @author Lenovo
  */
 @Data
@@ -32,5 +32,7 @@ public class UserDTO {
     private int receiveInfoPage;
     private List<CartProduct> cartProducts;
     private ShopDTO shopDTO;
-    private ReceiveInfo  defaultReceiveInfo;
+    private Boolean enabled;
+    private ReceiveInfo defaultReceiveInfo;
+    private List<Integer> shopSubscription;
 }

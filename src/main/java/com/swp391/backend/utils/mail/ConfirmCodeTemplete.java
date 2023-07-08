@@ -6,7 +6,6 @@
 package com.swp391.backend.utils.mail;
 
 /**
- *
  * @author Lenovo
  */
 public class ConfirmCodeTemplete {
@@ -248,7 +247,7 @@ public class ConfirmCodeTemplete {
                 + "                    text-align: center;\n"
                 + "                  \"\n"
                 + "                >\n"
-                + "                  Welcome to " + platform +"!\n"
+                + "                  Welcome to " + platform + "!\n"
                 + "                </div>\n"
                 + "              </td>\n"
                 + "            </tr>\n"
@@ -335,7 +334,7 @@ public class ConfirmCodeTemplete {
                 + "                                letter-spacing: 0.27px;\n"
                 + "                              \"\n"
                 + "                            >\n"
-                + "                              Hey "+ firstname +",\n"
+                + "                              Hey " + firstname + ",\n"
                 + "                            </h2>\n"
                 + "                            <p>\n"
                 + "                              Wowwee! Thanks for registering an account in Bird\n"
@@ -639,7 +638,7 @@ public class ConfirmCodeTemplete {
                 + "                            text-align: center;\n"
                 + "                          \"\n"
                 + "                        >\n"
-                + "                          Sent by "+ platform +" •\n"
+                + "                          Sent by " + platform + " •\n"
                 + "                          <a\n"
                 + "                            href=\"/github\"\n"
                 + "                            style=\"color: #1eb0f4; text-decoration: none\"\n"

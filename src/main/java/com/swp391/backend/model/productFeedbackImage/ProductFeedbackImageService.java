@@ -11,18 +11,15 @@ import java.util.List;
 public class ProductFeedbackImageService {
     private final ProductFeedbackImageRepository productFeedbackImageRepository;
 
-    public ProductFeedbackImage save(ProductFeedbackImage productFeedbackImage)
-    {
+    public ProductFeedbackImage save(ProductFeedbackImage productFeedbackImage) {
         return productFeedbackImageRepository.save(productFeedbackImage);
     }
 
-    public void delete(Integer id)
-    {
+    public void delete(Integer id) {
         productFeedbackImageRepository.deleteById(id);
     }
 
-    public List<ProductFeedbackImage> getByFeedback(Feedback feedback)
-    {
+    public List<ProductFeedbackImage> getByFeedback(Feedback feedback) {
         return productFeedbackImageRepository.findByFeedback(feedback);
     }
 }

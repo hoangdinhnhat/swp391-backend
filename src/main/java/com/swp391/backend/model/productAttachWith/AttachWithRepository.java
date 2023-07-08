@@ -4,16 +4,16 @@
  */
 package com.swp391.backend.model.productAttachWith;
 
-import java.util.List;
-
 import com.swp391.backend.model.categoryGroup.CategoryGroup;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.util.List;
+
 /**
- *
  * @author Lenovo
  */
-public interface AttachWithRepository extends JpaRepository<AttachWith, Integer>{
+public interface AttachWithRepository extends JpaRepository<AttachWith, Integer> {
     List<AttachWith> findByGroupOne(CategoryGroup g);
+
     List<AttachWith> findByGroupTwo(CategoryGroup g);
 }

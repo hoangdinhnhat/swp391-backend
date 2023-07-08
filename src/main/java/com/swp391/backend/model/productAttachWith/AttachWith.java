@@ -10,7 +10,6 @@ import jakarta.persistence.*;
 import lombok.*;
 
 /**
- *
  * @author Lenovo
  */
 @Getter
@@ -29,7 +28,7 @@ public class AttachWith {
     @JoinColumn(name = "group_one_id")
     @JsonBackReference
     private CategoryGroup groupOne;
-    
+
     @ManyToOne
     @JoinColumn(name = "group_two_id")
     @JsonBackReference

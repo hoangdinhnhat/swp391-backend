@@ -9,13 +9,11 @@ public class ProvinceService {
 
     private final ProvinceRepository provinceRepository;
 
-    public Province save(Province province)
-    {
+    public Province save(Province province) {
         return provinceRepository.save(province);
     }
 
-    public void deleteById(Integer id)
-    {
+    public void deleteById(Integer id) {
         provinceRepository.deleteById(id);
     }
 }

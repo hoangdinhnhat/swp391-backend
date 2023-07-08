@@ -15,18 +15,16 @@ import com.swp391.backend.model.shop.Shop;
 import com.swp391.backend.model.subscription.Subscription;
 import com.swp391.backend.model.token.Token;
 import jakarta.persistence.*;
-
-import java.util.Collection;
-import java.util.Date;
-import java.util.List;
-
 import lombok.*;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
+import java.util.Collection;
+import java.util.Date;
+import java.util.List;
+
 /**
- *
  * @author Lenovo
  */
 @Getter
@@ -37,8 +35,14 @@ import org.springframework.security.core.userdetails.UserDetails;
 @EqualsAndHashCode
 @Entity
 @Table(name = "_user")
-public class User implements UserDetails{
-    
+public class User implements UserDetails {
+
+    @OneToMany(mappedBy = "user")
+    @JsonManagedReference
+    List<Subscription> subscriptions;
+    @OneToMany(mappedBy = "user")
+    @JsonManagedReference
+    List<Notification> notifications;
     @Id
     @GeneratedValue
     private Integer id;
@@ -52,38 +56,24 @@ public class User implements UserDetails{
     private boolean isLogout = true;
     @Enumerated(EnumType.STRING)
     private Role role;
-    
     private Date timeout;
+    private Date joinAt;
     private Boolean locked = false;
     private Boolean enabled = false;
-    
     @OneToMany(mappedBy = "user")
     @JsonManagedReference
     private Collection<Token> tokens;
-    
     @OneToMany(mappedBy = "user")
     @JsonManagedReference
     private Collection<ReceiveInfo> receiveinfos;
-
     @OneToMany(mappedBy = "user")
     @JsonManagedReference
     private Collection<Feedback> feedbacks;
-
     @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "cart_id", referencedColumnName = "id")
     @JsonManagedReference
     private Cart cart;
-    
     private int wrongpasswordcounter = 0;
-
-    @OneToMany(mappedBy = "user")
-    @JsonManagedReference
-    List<Subscription> subscriptions;
-
-    @OneToMany(mappedBy = "user")
-    @JsonManagedReference
-    List<Notification> notifications;
-
     @OneToMany(mappedBy = "user")
     @JsonManagedReference
     private List<Shop> shops;
@@ -126,6 +116,17 @@ public class User implements UserDetails{
     public boolean isEnabled() {
         return enabled;
     }
-    
-    
+
+    public UserDTO toDto() {
+        return UserDTO
+                .builder()
+                .id(id)
+                .email(email)
+                .firstname(firstname)
+                .lastname(lastname)
+                .enabled(enabled)
+                .imageurl(imageurl)
+                .gender(gender)
+                .build();
+    }
 }

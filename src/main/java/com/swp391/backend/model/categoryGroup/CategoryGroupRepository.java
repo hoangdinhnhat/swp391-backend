@@ -10,10 +10,9 @@ import org.springframework.data.jpa.repository.Query;
 import java.util.List;
 
 /**
- *
  * @author Lenovo
  */
-public interface CategoryGroupRepository extends JpaRepository<CategoryGroup, Integer>{
+public interface CategoryGroupRepository extends JpaRepository<CategoryGroup, Integer> {
 
     @Query(
             value = "SELECT cg.id, cg.name, cg.category_id\n" +

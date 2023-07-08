@@ -21,21 +21,14 @@ public interface ShopRepository extends PagingAndSortingRepository<Shop, Integer
     List<Shop> findByNameContainingIgnoreCase(String search, Pageable pageable);
 
     @Query(
-            value = "select distinct s.id,\n" +
-                    "       s.join_time,\n" +
-                    "       s.name,\n" +
-                    "       s.rating,\n" +
-                    "       s.shop_image,\n" +
-                    "       s.shop_address_id,\n" +
-                    "       s.user_id\n" +
-                    "from shop s\n" +
-                    "inner join product p\n" +
-                    "on p.shop_id = s.id\n" +
-                    "inner join category_group cg\n" +
-                    "    on p.category_group_id = cg.id\n" +
-                    "where cg.category_id = ?1"
-            ,
-            nativeQuery = true
+            value = "select distinct s " +
+                    "from Shop s " +
+                    "inner join Product p " +
+                    "on s = p.shop " +
+                    "inner join CategoryGroup cg " +
+                    "on cg = p.categoryGroup " +
+                    "where cg.category = ?1"
+
     )
-    List<Shop> findByCategory(Integer categoryId, Pageable pageable);
+    List<Shop> findByCategory(Category category, Pageable pageable);
 }

@@ -9,8 +9,7 @@ public class FeedbackReplyService {
 
     private final FeedbackReplyRepository feedbackReplyRepository;
 
-    public FeedbackReply save(FeedbackReply feedbackReply)
-    {
+    public FeedbackReply save(FeedbackReply feedbackReply) {
         return feedbackReplyRepository.save(feedbackReply);
     }
 }

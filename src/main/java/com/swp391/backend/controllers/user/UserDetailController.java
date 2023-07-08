@@ -4,7 +4,9 @@
  */
 package com.swp391.backend.controllers.user;
 
+import com.google.gson.Gson;
 import com.swp391.backend.controllers.authentication.AuthenticatedManager;
+import com.swp391.backend.controllers.publics.FeedbackRequest;
 import com.swp391.backend.model.cart.Cart;
 import com.swp391.backend.model.cart.CartItem;
 import com.swp391.backend.model.cart.CartService;
@@ -16,8 +18,8 @@ import com.swp391.backend.model.district.District;
 import com.swp391.backend.model.district.DistrictService;
 import com.swp391.backend.model.notification.Notification;
 import com.swp391.backend.model.notification.NotificationService;
-import com.swp391.backend.model.notification.NotificationType;
 import com.swp391.backend.model.order.Order;
+import com.swp391.backend.model.order.OrderDTO;
 import com.swp391.backend.model.order.OrderService;
 import com.swp391.backend.model.order.OrderStatus;
 import com.swp391.backend.model.orderDetails.OrderDetails;
@@ -25,6 +27,10 @@ import com.swp391.backend.model.orderDetails.OrderDetailsId;
 import com.swp391.backend.model.orderDetails.OrderDetailsService;
 import com.swp391.backend.model.product.Product;
 import com.swp391.backend.model.product.ProductService;
+import com.swp391.backend.model.productFeedback.Feedback;
+import com.swp391.backend.model.productFeedback.FeedbackService;
+import com.swp391.backend.model.productFeedbackImage.ProductFeedbackImage;
+import com.swp391.backend.model.productFeedbackImage.ProductFeedbackImageService;
 import com.swp391.backend.model.productSale.ProductSale;
 import com.swp391.backend.model.productSale.ProductSaleService;
 import com.swp391.backend.model.province.Province;
@@ -42,12 +48,10 @@ import com.swp391.backend.model.user.UserDTO;
 import com.swp391.backend.model.user.UserService;
 import com.swp391.backend.model.ward.Ward;
 import com.swp391.backend.model.ward.WardService;
+import com.swp391.backend.utils.storage.ProductFeedbackImageStorageService;
 import com.swp391.backend.utils.storage.StorageService;
-
-import java.time.LocalDateTime;
-import java.util.*;
-import java.util.stream.Collectors;
-
+import com.swp391.backend.utils.zalopay_gateway.ZaloPayService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -56,15 +60,13 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.ModelAndView;
+
+import java.time.LocalDateTime;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * @author Lenovo
@@ -77,11 +79,7 @@ public class UserDetailController {
     private final UserService userService;
     private final AuthenticatedManager authenticatedManager;
     private final PasswordEncoder passwordEncoder;
-    @Autowired
-    @Qualifier(value = "avatar")
-    private StorageService storageService;
     private final ReceiveInfoService receiveInfoService;
-
     private final CartProductService cartProductService;
     private final CartService cartService;
     private final ProductService productService;
@@ -94,6 +92,25 @@ public class UserDetailController {
     private final OrderService orderService;
     private final OrderDetailsService orderDetailsService;
     private final NotificationService notificationService;
+    private final FeedbackService feedbackService;
+    private final ProductFeedbackImageService productFeedbackImageService;
+    private final TemporaryStorage temporaryStorage;
+    private ZaloPayService zaloPayService = ZaloPayService.gI();
+
+    @Autowired
+    private Gson gsonUtils;
+
+    @Autowired
+    @Qualifier(value = "avatar")
+    private StorageService storageService;
+
+    @Autowired
+    @Qualifier(value = "productFeedbackVideo")
+    private StorageService productFeedbackVideoStorageService;
+
+    @Autowired
+    @Qualifier(value = "productFeedbackImage")
+    private StorageService productFeedbackImageStorageService;
 
     @GetMapping("/info")
     public ResponseEntity<UserDTO> loginUserInfo() {
@@ -108,10 +125,14 @@ public class UserDetailController {
 
         List<Shop> shops = user.getShops();
         ShopDTO shop = null;
-        if (shops.size() > 0)
-        {
+        if (shops.size() > 0) {
             shop = shops.get(0).toDto();
         }
+
+        List<Integer> shopSubscription = subscriptionService.getByUser(user)
+                .stream()
+                .map(it -> it.getShop().getId())
+                .toList();
 
         UserDTO userDTO = UserDTO.builder()
                 .id(user.getId())
@@ -124,6 +145,7 @@ public class UserDetailController {
                 .receiveInfoPage(page)
                 .defaultReceiveInfo(defaultInfo)
                 .cartProducts(cartProducts)
+                .shopSubscription(shopSubscription)
                 .build();
         return ResponseEntity.ok().body(userDTO);
     }
@@ -243,8 +265,7 @@ public class UserDetailController {
     }
 
     @PostMapping("/subscription/{shop_id}")
-    public ResponseEntity<Subscription> subscribeShop(@PathVariable("shop_id") Integer shopId)
-    {
+    public ResponseEntity<Subscription> subscribeShop(@PathVariable("shop_id") Integer shopId) {
         User user = (User) authenticatedManager.getAuthenticatedUser();
         Shop shop = shopService.getShopById(shopId);
 
@@ -258,6 +279,7 @@ public class UserDetailController {
                 .id(id)
                 .shop(shop)
                 .user(user)
+                .subscriptionTime(new Date())
                 .build();
         subscription = subscriptionService.save(subscription);
 
@@ -265,7 +287,6 @@ public class UserDetailController {
                 .title("Your shop just gained a new following")
                 .content(String.format("Customer %s just followed your shop. Congratulations on your new follower!", user.getFirstname()))
                 .imageUrl(user.getImageurl())
-                .type(NotificationType.SUBSCRIPTION)
                 .shop(shop)
                 .createdAt(new Date())
                 .read(false)
@@ -295,8 +316,7 @@ public class UserDetailController {
                         CartProductDTO dto = null;
                         ProductSale pSale = productSaleService.findProductInSale(i.getProduct());
 
-                        if (pSale != null)
-                        {
+                        if (pSale != null) {
                             dto = CartProductDTO.builder()
                                     .saleQuantity(pSale.getSaleQuantity())
                                     .saleSold(pSale.getSold())
@@ -304,8 +324,7 @@ public class UserDetailController {
                                     .salePercent(pSale.getSaleEvent().getPercent())
                                     .quantity(i.getQuantity())
                                     .build();
-                        }else
-                        {
+                        } else {
                             dto = CartProductDTO.builder()
                                     .saleQuantity(0)
                                     .saleSold(0)
@@ -323,8 +342,7 @@ public class UserDetailController {
 
                         CartProductDTO dto = null;
 
-                        if (pSale != null)
-                        {
+                        if (pSale != null) {
                             dto = CartProductDTO.builder()
                                     .saleQuantity(pSale.getSaleQuantity())
                                     .saleSold(pSale.getSold())
@@ -332,8 +350,7 @@ public class UserDetailController {
                                     .salePercent(pSale.getSaleEvent().getPercent())
                                     .quantity(i.getQuantity())
                                     .build();
-                        }else
-                        {
+                        } else {
                             dto = CartProductDTO.builder()
                                     .saleQuantity(0)
                                     .saleSold(0)
@@ -371,6 +388,9 @@ public class UserDetailController {
             userService.save(user);
         }
         Product product = productService.getProductById(product_id);
+        if (product.getShop().getUser().getId() == user.getId()) {
+            return ResponseEntity.badRequest().build();
+        }
         CartProduct findedCartProduct = cartProductService.findByCartAndProduct(cart, product);
 
         if (findedCartProduct != null) {
@@ -410,32 +430,57 @@ public class UserDetailController {
         return ResponseEntity.ok().build();
     }
 
-    public String generateOrderId(ShopDTO shopDTO) {
-        Shop shop = shopService.getShopById(shopDTO.getId());
+    public String generateOrderId() {
         String year = String.valueOf(LocalDateTime.now().getYear());
         String month = String.valueOf(LocalDateTime.now().getMonthValue());
         String date = String.valueOf(LocalDateTime.now().getDayOfMonth());
-        int numberOfOrder = orderService.getNumberOfOrderInCurrentDay(shop);
-        return year + month + date + (numberOfOrder + 1);
+
+        return year + month + date;
     }
 
-    @PostMapping("/order/create")
-    public void createOrder(@RequestBody List<CheckOutRequest> checkOutRequests) {
+    @GetMapping("/payment/finish")
+    public ModelAndView processAfterPayment(HttpServletRequest request) throws Exception {
+        boolean check = zaloPayService.checkCallback(request);
+        if (!check) {
+            return null;
+        }
+        List<CheckOutRequest> checkOutRequests = (List<CheckOutRequest>) temporaryStorage.getTemporaryObject();
+        orderCreator(checkOutRequests, OrderStatus.SHIPPING);
+        return new ModelAndView("redirect:http://localhost:3000/purchase/shipping");
+    }
 
+    public int convertUsdToVnd(int usd) {
+        return usd * 23000;
+    }
+
+    @PostMapping("/payment/open")
+    public ResponseEntity<String> openGateway(@RequestParam("total") Integer total, @RequestBody List<CheckOutRequest> checkOutRequests) throws Exception {
+        temporaryStorage.saveTemporaryObject(checkOutRequests);
+        String gatewayUrl = zaloPayService.createGatewayUrl(convertUsdToVnd(total), "users/payment/finish");
+        return ResponseEntity.ok().body(gatewayUrl);
+    }
+
+    @Transactional
+    public void orderCreator(List<CheckOutRequest> checkOutRequests, OrderStatus orderStatus) {
+        int numberOfOrder = orderService.getNumberOfOrderInCurrentDay();
         User user = (User) authenticatedManager.getAuthenticatedUser();
         Cart cart = user.getCart();
         checkOutRequests.forEach(it -> {
-
+            int index = checkOutRequests.indexOf(it) + 1;
+            String oId = generateOrderId() + (numberOfOrder + index);
             Shop shop = shopService.getShopById(it.getShopId());
             Product product = productService.getProductById(it.getCheckOutItems().get(0).getProductId());
             String description = product.getDescription().substring(0, 150);
+            ReceiveInfo receiveInfo = receiveInfoService.getReceiveInfo(it.getReceiveInfo());
 
             Order order = Order.builder()
-                    .id(generateOrderId(shop.toDto()))
+                    .id(oId)
                     .user(user)
-                    .status(OrderStatus.PENDING)
-                    .payment("COD")
+                    .receiveInfo(receiveInfo)
+                    .status(orderStatus)
+                    .payment(it.getPayment())
                     .description(description)
+                    .shippingFee(it.getShippingFee())
                     .shop(shop)
                     .createdTime(new Date())
                     .build();
@@ -456,7 +501,7 @@ public class UserDetailController {
                         .id(id)
                         .build();
                 orderDetailsService.save(orderDetails);
-                product1.setAvailable(product1.getAvailable() - 1);
+                product1.setAvailable(product1.getAvailable() - tt.getQuantity());
                 productService.save(product1);
 
                 CartProductKey cpi = new CartProductKey();
@@ -465,25 +510,32 @@ public class UserDetailController {
 
                 cartProductService.delete(cpi);
             });
-            order.setSellPrice(order.getSellPrice() + 20);
+            if ("ZaloPay Wallet".equals(it.getPayment())) {
+                shop.setWallet(order.getSellPrice() + order.getShippingFee());
+                shopService.save(shop);
+            }
         });
     }
 
+    @PostMapping("/order/create")
+    public ResponseEntity<String> createOrder(@RequestBody List<CheckOutRequest> checkOutRequests) {
+        orderCreator(checkOutRequests, OrderStatus.PENDING);
+        return ResponseEntity.ok().build();
+    }
+
     @PostMapping("/order/special/create")
-    public void createSpecialOrder(@RequestBody Integer productId, @RequestParam("quantity") Optional<Integer> quan)
-    {
+    public ResponseEntity<String> createSpecialOrder(@RequestParam("id") Integer productId, @RequestParam("quantity") Optional<Integer> quan) {
         User user = (User) authenticatedManager.getAuthenticatedUser();
         Product product = productService.getProductById(productId);
-        if (product.getCategoryGroup().getCategory().getId() != 1)
-        {
-
+        if (product.getCategoryGroup().getCategory().getId() != 1) {
+            return ResponseEntity.badRequest().build();
         }
 
         Shop shop = shopService.getShopById(product.getShop().getId());
         Integer quantity = quan.orElse(1);
 
         Order order = Order.builder()
-                .id(generateOrderId(shop.toDto()))
+                .id(generateOrderId())
                 .user(user)
                 .status(OrderStatus.SPECIAL_SHOP)
                 .payment("COD")
@@ -508,6 +560,8 @@ public class UserDetailController {
 
         product.setAvailable(product.getAvailable() - 1);
         productService.save(product);
+
+        return ResponseEntity.ok().build();
     }
 
     @PostMapping("/order/special/process/{id}")
@@ -521,13 +575,11 @@ public class UserDetailController {
             return ResponseEntity.badRequest().build();
         }
 
-        if (action.equals("CONFIRM"))
-        {
+        if (action.equals("CONFIRM")) {
             order.setStatus(OrderStatus.SHIPPING);
         }
 
-        if (action.equals("REJECT"))
-        {
+        if (action.equals("REJECT")) {
             order.setStatus(OrderStatus.CANCELLED);
         }
 
@@ -536,11 +588,157 @@ public class UserDetailController {
     }
 
     @GetMapping("/notifications")
-    public List<Notification> getNotification()
-    {
+    public List<Notification> getNotification() {
         User user = (User) authenticatedManager.getAuthenticatedUser();
         return user.getNotifications();
     }
 
+    @PostMapping("/notification/read/{id}")
+    public ResponseEntity<String> markRead(@PathVariable("id") Integer notiId) {
+        Notification notification = notificationService.getById(notiId);
+        notification.setRead(true);
+        notificationService.save(notification);
+        return ResponseEntity.ok().build();
+    }
 
+    @PostMapping("/notification/read")
+    public ResponseEntity<String> markReadAll() {
+        User user = (User) authenticatedManager.getAuthenticatedUser();
+        List<Notification> notifications = notificationService.getNotificationByUser(user).stream()
+                .map(it -> {
+                    it.setRead(true);
+                    return it;
+                })
+                .toList();
+        notificationService.saveAllAndFlush(notifications);
+        return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/orders/search")
+    public ResponseEntity<List<OrderDTO>> searchOrder(
+            @RequestParam("keyword") Optional<String> kw,
+            @RequestParam("filter") Optional<OrderStatus> ft,
+            @RequestParam("page") Optional<Integer> pg
+    ) {
+        User user = (User) authenticatedManager.getAuthenticatedUser();
+        String keyword = kw.orElse("");
+        OrderStatus filter = ft.orElse(null);
+        Integer page = pg.orElse(1) - 1;
+        List<OrderDTO> orders = null;
+        if (filter == null) {
+            orders = orderService.getByUserAndId(user, keyword, page)
+                    .stream()
+                    .map(it -> it.toDto())
+                    .toList();
+
+            return ResponseEntity.ok().body(orders);
+        }
+
+        orders = orderService.getByUserAndStatusAndId(user, filter, keyword, page)
+                .stream()
+                .map(it -> it.toDto())
+                .toList();
+
+        return ResponseEntity.ok().body(orders);
+    }
+
+    @PostMapping("/order/feedbacks")
+    public ResponseEntity<String> uploadProductFeedback(
+            @RequestParam("feedback") String jsonRequest,
+            @RequestParam("images") Optional<MultipartFile[]> imgs,
+            @RequestParam("video") Optional<MultipartFile> vd
+    ) {
+        var images = imgs.orElse(null);
+        var video = vd.orElse(null);
+
+        var request = gsonUtils.fromJson(jsonRequest, FeedbackRequest.class);
+        var order = orderService.getById(request.getOrderId());
+        var product = productService.getProductById(request.getProductId());
+        var user = (User) authenticatedManager.getAuthenticatedUser();
+        var orderDetails = orderDetailsService.getByOrderAndProduct(order, product);
+
+        var feedbackRequest = Feedback.builder()
+                .rate(request.getRate())
+                .time(request.getTime())
+                .type("RATE PRODUCT")
+                .description(request.getDescription())
+                .product(product)
+                .user(user)
+                .build();
+        Feedback feedback = feedbackService.save(feedbackRequest);
+
+        if (video != null) {
+            feedback.setVideoUrl("/api/v1/publics/product/feedbacks/video/" + feedback.getId());
+            feedback = feedbackService.save(feedback);
+            productFeedbackVideoStorageService.store(video, feedback.getId() + ".mp4");
+        }
+
+        if (images != null) {
+            int count = 0;
+            var services = (ProductFeedbackImageStorageService) productFeedbackImageStorageService;
+            for (MultipartFile image : images) {
+                count++;
+                services.store(image, feedback.getId().toString(), count + ".jpg");
+                var pFI = ProductFeedbackImage.builder()
+                        .feedback(feedback)
+                        .url("/api/v1/publics/product/feedbacks/image/" + feedback.getId() + "?imgId=" + count)
+                        .build();
+                productFeedbackImageService.save(pFI);
+            }
+        }
+
+        orderDetailsService.setFeedbacked(orderDetails);
+
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/order/reports")
+    public ResponseEntity<String> uploadProductReport(
+            @RequestParam("feedback") String jsonRequest,
+            @RequestParam("images") Optional<MultipartFile[]> imgs,
+            @RequestParam("video") Optional<MultipartFile> vd
+    ) {
+        var images = imgs.orElse(null);
+        var video = vd.orElse(null);
+
+        var request = gsonUtils.fromJson(jsonRequest, FeedbackRequest.class);
+        var order = orderService.getById(request.getOrderId());
+        var product = productService.getProductById(request.getProductId());
+        var user = (User) authenticatedManager.getAuthenticatedUser();
+        var orderDetails = orderDetailsService.getByOrderAndProduct(order, product);
+
+        var feedbackRequest = Feedback.builder()
+                .rate(request.getRate())
+                .type("REPORT - " + request.getReason())
+                .time(request.getTime())
+                .description(request.getDescription())
+                .product(product)
+                .user(user)
+                .build();
+        Feedback feedback = feedbackService.saveSpecial(feedbackRequest);
+
+        if (video != null) {
+            feedback.setVideoUrl("/api/v1/publics/product/feedbacks/video/" + feedback.getId());
+            feedback = feedbackService.saveSpecial(feedback);
+            productFeedbackVideoStorageService.store(video, feedback.getId() + ".mp4");
+        }
+
+        if (images != null) {
+            int count = 0;
+            var services = (ProductFeedbackImageStorageService) productFeedbackImageStorageService;
+            for (MultipartFile image : images) {
+                count++;
+                services.store(image, feedback.getId().toString(), count + ".jpg");
+                var pFI = ProductFeedbackImage.builder()
+                        .feedback(feedback)
+                        .url("/api/v1/publics/product/feedbacks/image/" + feedback.getId() + "?imgId=" + count)
+                        .build();
+                productFeedbackImageService.save(pFI);
+            }
+        }
+
+        orderDetailsService.setFeedbacked(orderDetails);
+
+        return ResponseEntity.ok().build();
+    }
 }

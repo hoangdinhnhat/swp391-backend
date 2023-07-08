@@ -1,9 +1,7 @@
 package com.swp391.backend.model.cartProduct;
 
-import com.swp391.backend.model.productSale.ProductSaleKey;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
-import lombok.Builder;
 
 import java.io.Serializable;
 

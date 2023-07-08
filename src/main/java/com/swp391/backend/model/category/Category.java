@@ -1,11 +1,12 @@
 package com.swp391.backend.model.category;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.swp391.backend.model.categoryDetailInfo.CategoryDetailInfo;
 import com.swp391.backend.model.categoryGroup.CategoryGroup;
-import com.swp391.backend.model.shop.Shop;
-import jakarta.persistence.*;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
 import lombok.*;
 
 import java.util.List;
@@ -30,8 +31,7 @@ public class Category {
     @JsonManagedReference
     private List<CategoryDetailInfo> specificDetails;
 
-    public CategoryDTO toDto()
-    {
+    public CategoryDTO toDto() {
         return CategoryDTO.builder()
                 .id(id)
                 .name(name)

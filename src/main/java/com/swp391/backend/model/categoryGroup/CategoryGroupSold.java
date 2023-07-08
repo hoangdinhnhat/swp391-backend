@@ -9,5 +9,5 @@ import lombok.Setter;
 @Builder
 public class CategoryGroupSold {
     private CategoryGroupDTO categoryGroup;
-    private  Integer sold;
+    private Integer sold;
 }

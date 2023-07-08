@@ -2,19 +2,19 @@ package com.swp391.backend.model.productSale;
 
 import com.swp391.backend.model.product.Product;
 import com.swp391.backend.model.saleEvent.SaleEvent;
+import com.swp391.backend.model.settings.SettingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
 public class ProductSaleService {
     private final ProductSaleRepository productSaleRepository;
+    private final SettingService settingService;
 
     public ProductSale save(ProductSale productSale) {
         return productSaleRepository.save(productSale);
@@ -25,7 +25,8 @@ public class ProductSaleService {
     }
 
     public List<ProductSale> getBySaleEvent(SaleEvent saleEvent, Integer page) {
-        Pageable pageable = PageRequest.of(page, 20);
+        Integer size = settingService.getById(1).getValue();
+        Pageable pageable = PageRequest.of(page, size);
         return productSaleRepository.findBySaleEvent(saleEvent, pageable);
     }
 

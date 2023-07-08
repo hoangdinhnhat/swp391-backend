@@ -1,6 +1,5 @@
 package com.swp391.backend.model.orderDetails;
 
-import com.swp391.backend.model.subscription.SubscriptionId;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
 import lombok.Data;

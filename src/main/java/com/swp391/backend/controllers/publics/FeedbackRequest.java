@@ -12,9 +12,10 @@ import java.util.Date;
 @AllArgsConstructor
 @ToString
 public class FeedbackRequest {
-    private String userId;
+    private String orderId;
+    private Integer productId;
     private Date time;
     private Integer rate;
+    private String reason;
     private String description;
-    private Integer productId;
 }

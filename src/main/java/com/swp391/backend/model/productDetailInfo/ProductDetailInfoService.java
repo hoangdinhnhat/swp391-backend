@@ -7,8 +7,8 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class ProductDetailInfoService {
     private final ProductDetailInfoRepository productDetailInfoRepository;
-    public ProductDetailInfo save(ProductDetailInfo productDetailInfo)
-    {
+
+    public ProductDetailInfo save(ProductDetailInfo productDetailInfo) {
         return productDetailInfoRepository.save(productDetailInfo);
     }
 }

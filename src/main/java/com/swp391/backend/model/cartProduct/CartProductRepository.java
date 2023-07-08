@@ -2,8 +2,6 @@ package com.swp391.backend.model.cartProduct;
 
 import com.swp391.backend.model.cart.Cart;
 import com.swp391.backend.model.product.Product;
-import com.swp391.backend.model.productSale.ProductSale;
-import com.swp391.backend.model.productSale.ProductSaleKey;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.repository.PagingAndSortingRepository;

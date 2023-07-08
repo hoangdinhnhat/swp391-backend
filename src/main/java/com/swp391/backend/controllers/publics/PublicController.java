@@ -4,80 +4,50 @@
  */
 package com.swp391.backend.controllers.publics;
 
-import java.time.LocalDateTime;
-import java.util.*;
-import java.util.stream.Collectors;
-
 import com.google.gson.Gson;
-import com.swp391.backend.model.cart.Cart;
-import com.swp391.backend.model.cart.CartItem;
-import com.swp391.backend.model.cart.CartService;
-import com.swp391.backend.model.cartProduct.CartProduct;
-import com.swp391.backend.model.cartProduct.CartProductKey;
-import com.swp391.backend.model.cartProduct.CartProductService;
-import com.swp391.backend.model.category.*;
+import com.swp391.backend.model.category.Category;
+import com.swp391.backend.model.category.CategoryDTO;
+import com.swp391.backend.model.category.CategoryDetails;
+import com.swp391.backend.model.category.CategoryService;
 import com.swp391.backend.model.categoryDetailInfo.CategoryDetailInfo;
-import com.swp391.backend.model.categoryDetailInfo.CategoryDetailInfoRepository;
 import com.swp391.backend.model.categoryDetailInfo.CategoryDetailInfoService;
 import com.swp391.backend.model.categoryGroup.CategoryGroup;
 import com.swp391.backend.model.categoryGroup.CategoryGroupDTO;
 import com.swp391.backend.model.categoryGroup.CategoryGroupService;
 import com.swp391.backend.model.categoryGroup.CategoryGroupSold;
-import com.swp391.backend.model.district.District;
-import com.swp391.backend.model.district.DistrictService;
 import com.swp391.backend.model.message.Message;
 import com.swp391.backend.model.message.MessageService;
 import com.swp391.backend.model.notification.Notification;
 import com.swp391.backend.model.notification.NotificationService;
-import com.swp391.backend.model.order.Order;
 import com.swp391.backend.model.order.OrderService;
-import com.swp391.backend.model.orderDetails.OrderDetails;
-import com.swp391.backend.model.orderDetails.OrderDetailsId;
 import com.swp391.backend.model.product.Product;
 import com.swp391.backend.model.product.ProductDTO;
 import com.swp391.backend.model.product.ProductService;
 import com.swp391.backend.model.product.SearchDTO;
 import com.swp391.backend.model.productAttachWith.AttachWithService;
 import com.swp391.backend.model.productDetailInfo.ProductDetailInfo;
-import com.swp391.backend.model.productDetailInfo.ProductDetailInfoRepository;
 import com.swp391.backend.model.productDetailInfo.ProductDetailInfoService;
 import com.swp391.backend.model.productFeedback.Feedback;
 import com.swp391.backend.model.productFeedback.FeedbackService;
-import com.swp391.backend.model.productFeedbackImage.ProductFeedbackImage;
 import com.swp391.backend.model.productFeedbackImage.ProductFeedbackImageService;
-import com.swp391.backend.model.productFeedbackReply.FeedbackReply;
 import com.swp391.backend.model.productFeedbackReply.FeedbackReplyService;
 import com.swp391.backend.model.productImage.ProductImage;
 import com.swp391.backend.model.productImage.ProductImageServie;
-import com.swp391.backend.model.productSale.ProductSale;
 import com.swp391.backend.model.productSale.ProductSaleDTO;
-import com.swp391.backend.model.productSale.ProductSaleKey;
 import com.swp391.backend.model.productSale.ProductSaleService;
-import com.swp391.backend.model.province.Province;
-import com.swp391.backend.model.province.ProvinceService;
 import com.swp391.backend.model.saleEvent.SaleEvent;
 import com.swp391.backend.model.saleEvent.SaleEventService;
+import com.swp391.backend.model.settings.SettingService;
 import com.swp391.backend.model.shop.Shop;
 import com.swp391.backend.model.shop.ShopDTO;
 import com.swp391.backend.model.shop.ShopDetails;
 import com.swp391.backend.model.shop.ShopService;
-import com.swp391.backend.model.shopAddress.ShopAddress;
-import com.swp391.backend.model.shopAddress.ShopAddressService;
-import com.swp391.backend.model.subscription.Subscription;
-import com.swp391.backend.model.subscription.SubscriptionId;
 import com.swp391.backend.model.subscription.SubscriptionService;
 import com.swp391.backend.model.user.User;
 import com.swp391.backend.model.user.UserService;
-import com.swp391.backend.model.ward.Ward;
-import com.swp391.backend.model.ward.WardService;
-import com.swp391.backend.utils.json.JsonUtils;
-import com.swp391.backend.utils.storage.ProductFeedbackImageStorageService;
 import com.swp391.backend.utils.storage.ProductImageStorageService;
 import com.swp391.backend.utils.storage.StorageService;
 import lombok.RequiredArgsConstructor;
-import org.aspectj.weaver.ast.Not;
-import org.aspectj.weaver.ast.Or;
-import org.checkerframework.checker.nullness.Opt;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.io.Resource;
@@ -85,6 +55,12 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  * @author Lenovo
@@ -112,6 +88,7 @@ public class PublicController {
     private final SubscriptionService subscriptionService;
     private final FeedbackReplyService feedbackReplyService;
     private final MessageService messageService;
+    private final SettingService settingService;
 
     @Autowired
     private Gson gsonUtils;
@@ -327,18 +304,20 @@ public class PublicController {
     @GetMapping("/product/{id}")
     public ResponseEntity<ProductDTO> productDetail(
             @PathVariable("id") Optional<Integer> id,
-            @RequestParam("page")Optional<Integer> pg
-            ) {
+            @RequestParam("page") Optional<Integer> pg
+    ) {
         Integer pid = id.orElse(1);
         Integer page = pg.orElse(1) - 1;
 
         var p = productService.getProductById(pid);
         var cg = categoryGroupService.getCategoryGroupById(p.getCategoryGroup().getId());
         var shop = shopService.getShopById(p.getShop().getId());
+        var numOfAttach = settingService.getById(3).getValue();
+        var numOfRelated = settingService.getById(2).getValue();
 
         List<CategoryGroup> attachWith = attachWithService.getAttachWith(cg);
-        List<Product> products = categoryGroupService.getProductByCategoryGroups(p, attachWith);
-        List<ProductSaleDTO> relatedTo = productService.getByCategory(cg.getCategory(), 0, "default", 10)
+        List<Product> products = categoryGroupService.getProductByCategoryGroups(p, attachWith, numOfAttach);
+        List<ProductSaleDTO> relatedTo = productService.getByCategory(cg.getCategory(), 0, "default", numOfRelated)
                 .stream()
                 .map(it -> {
                     var find = productSaleService.findProductInSale(it);
@@ -513,54 +492,6 @@ public class PublicController {
             return ResponseEntity.ok().headers(header).body(file);
         }
         return ResponseEntity.badRequest().build();
-    }
-
-    @PostMapping("/feedbacks/response/{feedback_id}")
-    public void shopResponseFeedback(@PathVariable("feedback_id") Integer feedbackId, @RequestBody String response) {
-        Feedback feedback = feedbackService.getById(feedbackId);
-
-        var feedbackRep = FeedbackReply.builder()
-                .feedback(feedback)
-                .content("We would like to thank our users for their continued support of our product. We are always working to improve the product, and we appreciate your feedback. We know that there are still some features that are missing, and we are sorry for any inconvenience this may cause. We are working hard to add these features as soon as possible.")
-                .build();
-
-        feedbackReplyService.save(feedbackRep);
-    }
-
-    @PostMapping("/product/feedbacks/upload")
-    public ResponseEntity<String> uploadProductFeedback(@RequestParam("feedback") String jsonRequest, @RequestParam("images") MultipartFile[] images, @RequestParam("video") MultipartFile video) {
-        var request = gsonUtils.fromJson(jsonRequest, FeedbackRequest.class);
-        var product = productService.getProductById(request.getProductId());
-        var user = (User) userService.loadUserByUsername(request.getUserId());
-
-        var feedbackRequest = Feedback.builder()
-                .rate(request.getRate())
-                .time(request.getTime())
-                .description(request.getDescription())
-                .videoUrl("/api/v1/publics/product/feedbacks/video/1")
-                .product(product)
-                .user(user)
-                .build();
-
-        var feedback = feedbackService.save(feedbackRequest);
-        feedback.setVideoUrl("/api/v1/publics/product/feedbacks/video/" + feedback.getId());
-        feedback = feedbackService.save(feedback);
-
-        productFeedbackVideoStorageService.store(video, feedback.getId() + ".mp4");
-
-        int count = 0;
-        var services = (ProductFeedbackImageStorageService) productFeedbackImageStorageService;
-        for (MultipartFile image : images) {
-            count++;
-            services.store(image, feedback.getId().toString(), count + ".jpg");
-            var pFI = ProductFeedbackImage.builder()
-                    .feedback(feedback)
-                    .url("/api/v1/publics/product/feedbacks/image/" + feedback.getId() + "?imgId=" + count)
-                    .build();
-            productFeedbackImageService.save(pFI);
-        }
-
-        return ResponseEntity.ok().build();
     }
 
     @GetMapping("/product/feedbacks/video/{feedback_id}")

@@ -9,8 +9,7 @@ public class ShopAddressService {
 
     private final ShopAddressRepository shopAddressRepository;
 
-    public ShopAddress save(ShopAddress shopAddress)
-    {
+    public ShopAddress save(ShopAddress shopAddress) {
         return shopAddressRepository.save(shopAddress);
     }
 }

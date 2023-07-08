@@ -4,11 +4,14 @@ import com.swp391.backend.controllers.chat.ChatService;
 import com.swp391.backend.model.category.CategoryService;
 import com.swp391.backend.model.categoryDetailInfo.CategoryDetailInfoService;
 import com.swp391.backend.model.categoryGroup.CategoryGroupService;
+import com.swp391.backend.model.counter.CounterService;
 import com.swp391.backend.model.order.OrderService;
 import com.swp391.backend.model.product.ProductService;
 import com.swp391.backend.model.productAttachWith.AttachWithService;
 import com.swp391.backend.model.saleEvent.SaleEventService;
+import com.swp391.backend.model.settings.SettingService;
 import com.swp391.backend.model.shop.ShopService;
+import com.swp391.backend.model.shopPlan.ShopPlanService;
 import com.swp391.backend.model.subscription.SubscriptionService;
 import com.swp391.backend.model.user.UserService;
 import com.swp391.backend.utils.storage.ProductVideoService;
@@ -36,9 +39,23 @@ public class BackendApplication {
     }
 
     @Bean
+    CommandLineRunner init11(SettingService settingService) {
+        return (args) -> {
+            settingService.init();
+        };
+    }
+
+    @Bean
     CommandLineRunner initUser(UserService userService) {
         return (args) -> {
             userService.init();
+        };
+    }
+
+    @Bean
+    CommandLineRunner initPlan(ShopPlanService shopPlanService) {
+        return (args) -> {
+            shopPlanService.init();
         };
     }
 
@@ -109,6 +126,13 @@ public class BackendApplication {
     CommandLineRunner init10(ChatService chatService) {
         return (args) -> {
             chatService.init();
+        };
+    }
+
+    @Bean
+    CommandLineRunner init12(CounterService counterService) {
+        return (args) -> {
+            counterService.init();
         };
     }
 }

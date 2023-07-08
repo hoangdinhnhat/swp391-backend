@@ -1,8 +1,6 @@
 package com.swp391.backend.model.cart;
 
-import com.swp391.backend.model.cartProduct.CartProduct;
 import com.swp391.backend.model.cartProduct.CartProductDTO;
-import com.swp391.backend.model.product.Product;
 import com.swp391.backend.model.shop.ShopDTO;
 import lombok.Builder;
 import lombok.Getter;
@@ -16,5 +14,5 @@ import java.util.List;
 public class CartItem {
     private ShopDTO shop;
     private List<CartProductDTO> cartProducts;
-    private Integer shippingFee;
+    private double shippingFee;
 }

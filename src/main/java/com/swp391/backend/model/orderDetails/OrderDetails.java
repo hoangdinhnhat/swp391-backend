@@ -3,8 +3,6 @@ package com.swp391.backend.model.orderDetails;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.swp391.backend.model.order.Order;
 import com.swp391.backend.model.product.Product;
-import com.swp391.backend.model.shop.Shop;
-import com.swp391.backend.model.user.User;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -32,4 +30,15 @@ public class OrderDetails {
     private Product product;
 
     private Integer quantity;
+    private double sellPrice;
+    private boolean feedbacked;
+
+    public OrderDetailsDTO toDto() {
+        return OrderDetailsDTO.builder()
+                .product(product)
+                .quantity(quantity)
+                .sellPrice(sellPrice)
+                .feedbacked(feedbacked)
+                .build();
+    }
 }

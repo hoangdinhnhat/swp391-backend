@@ -29,7 +29,7 @@ public class Feedback {
     private Date time;
     private Integer rate;
 
-    @Column(columnDefinition="TEXT")
+    @Column(columnDefinition = "TEXT")
     private String description;
 
     private String videoUrl;
@@ -47,17 +47,25 @@ public class Feedback {
     @JsonManagedReference
     private List<FeedbackReply> feedbackReplies;
 
+    private String type;
+    private String reason;
+
     public FeedbackDTO toDto() {
         return FeedbackDTO.builder()
+                .id(id)
                 .userId(user.getId())
                 .userName(user.getFirstname() + " " + user.getLastname())
                 .userImageUrl(user.getImageurl())
+                .productImage(product.getImages().get(0).getUrl())
+                .productName(product.getName())
+                .productPrice(product.getPrice())
                 .time(time)
                 .rate(rate)
                 .description(description)
                 .videoUrl(videoUrl)
                 .images(images)
                 .feedbackReplies(feedbackReplies)
+                .type(type)
                 .build();
     }
 }

@@ -18,28 +18,25 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 /**
- *
  * @author Lenovo
  */
 @Configuration
 @RequiredArgsConstructor
 public class ApplicationConfig {
-    
+
     @Autowired
     private final UserService userService;
-    
+
     @Bean
-    public AuthenticationProvider authenticationProvider()
-    {
+    public AuthenticationProvider authenticationProvider() {
         DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
         authProvider.setUserDetailsService(userService);
         authProvider.setPasswordEncoder(passwordEncoder());
         return authProvider;
     }
-    
+
     @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception
-    {
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
     }
 
@@ -49,9 +46,8 @@ public class ApplicationConfig {
     }
 
     @Bean
-    public Gson gsonUtils()
-    {
+    public Gson gsonUtils() {
         return new Gson();
     }
-    
+
 }

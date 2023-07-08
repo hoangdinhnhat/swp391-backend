@@ -1,8 +1,6 @@
 package com.swp391.backend.controllers.chat;
 
 import com.google.gson.Gson;
-import com.swp391.backend.controllers.authentication.AuthenticatedManager;
-import com.swp391.backend.controllers.publics.ProductRequest;
 import com.swp391.backend.model.ConversationChatter.ConversationChatter;
 import com.swp391.backend.model.ConversationChatter.ConversationChatterService;
 import com.swp391.backend.model.conversation.Conversation;
@@ -17,9 +15,7 @@ import com.swp391.backend.model.shop.ShopService;
 import com.swp391.backend.model.user.User;
 import com.swp391.backend.model.user.UserService;
 import com.swp391.backend.utils.storage.MessageImageStorageService;
-import com.swp391.backend.utils.storage.MessageVideoStorageService;
 import com.swp391.backend.utils.storage.StorageService;
-import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.ResponseEntity;
@@ -28,7 +24,6 @@ import org.springframework.messaging.handler.annotation.Payload;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Controller;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
@@ -83,23 +78,21 @@ public class ChatController {
 
     @MessageMapping("/personal")
     @Transactional
-    public List<Conversation> receiveMessage(@Payload MessageRequest request){
+    public List<Conversation> receiveMessage(@Payload MessageRequest request) {
 
         List<Conversation> conversations = null;
         String url = "";
-        if (request.getChatterType().equals("USER"))
-        {
+        if (request.getChatterType().equals("USER")) {
             User user = (User) userService.getById(request.getFromId());
-            if(user == null) return null;
-            conversations =  user.getConversationChatters().stream()
+            if (user == null) return null;
+            conversations = user.getConversationChatters().stream()
                     .map(it -> it.getConversation())
                     .collect(Collectors.toList());
             url = "USER-" + user.getId();
-        }else if (request.getChatterType().equals("SHOP"))
-        {
+        } else if (request.getChatterType().equals("SHOP")) {
             Shop shop = shopService.getShopById(request.getFromId());
-            if(shop == null) return null;
-            conversations =  shop.getConversationChatters().stream()
+            if (shop == null) return null;
+            conversations = shop.getConversationChatters().stream()
                     .map(it -> it.getConversation())
                     .collect(Collectors.toList());
             url = "SHOP-" + shop.getId();
@@ -109,7 +102,7 @@ public class ChatController {
     }
 
     @MessageMapping("/private-message")
-    public Message recMessage(@Payload MessageRequest request){
+    public Message recMessage(@Payload MessageRequest request) {
         Message message = chatService.sendMessage(request);
 
         String des = "/conversation/" + request.getConversationId();
@@ -120,28 +113,24 @@ public class ChatController {
     @PostMapping("app/media-message")
     public ResponseEntity<String> mediaMessage(
             @RequestParam("message") String jsonRequest,
-            @RequestParam("images") Optional<MultipartFile []> imgs,
-            @RequestParam("videos") Optional<MultipartFile []> vds
-    )
-    {
+            @RequestParam("images") Optional<MultipartFile[]> imgs,
+            @RequestParam("videos") Optional<MultipartFile[]> vds
+    ) {
         var request = gsonUtils.fromJson(jsonRequest, MessageRequest.class);
-        if (request.getContent().length() > 0)
-        {
+        if (request.getContent().length() > 0) {
             Message message = chatService.sendMessage(request);
             String des = "/conversation/" + request.getConversationId();
             simpMessagingTemplate.convertAndSend(des, message);
         }
 
-        MultipartFile [] images = imgs.orElse(null);
-        if (images != null)
-        {
+        MultipartFile[] images = imgs.orElse(null);
+        if (images != null) {
             Message message = chatService.sendMediaMessage(request, MessageType.IMAGES);
 
             int count = 0;
             var services = (MessageImageStorageService) messageImageStorageService;
             List<MessageImage> messageImages = new ArrayList<>();
-            for (MultipartFile image: images)
-            {
+            for (MultipartFile image : images) {
                 count++;
                 services.store(image, message.getId().toString(), count + ".jpg");
                 var mI = MessageImage.builder()
@@ -158,12 +147,10 @@ public class ChatController {
             simpMessagingTemplate.convertAndSend(des, message);
         }
 
-        MultipartFile [] videos = vds.orElse(null);
-        if (videos != null)
-        {
+        MultipartFile[] videos = vds.orElse(null);
+        if (videos != null) {
             var services = messageVideoStorageService;
-            for (MultipartFile video : videos)
-            {
+            for (MultipartFile video : videos) {
                 Message message = chatService.sendMediaMessage(request, MessageType.VIDEO);
                 services.store(video, message.getId() + ".mp4");
                 message.setVideo("/api/v1/publics/message/video/" + message.getId());
@@ -177,10 +164,8 @@ public class ChatController {
         return ResponseEntity.ok().build();
     }
 
-    public boolean isConnect (User user, Shop shop)
-    {
-        if (user == null || shop == null)
-        {
+    public boolean isConnect(User user, Shop shop) {
+        if (user == null || shop == null) {
             return false;
         }
 
@@ -188,8 +173,7 @@ public class ChatController {
                 .map(it -> it.getConversation())
                 .collect(Collectors.toList());
 
-        for(Conversation it : conversations)
-        {
+        for (Conversation it : conversations) {
             var list = it.getConversationChatters().stream()
                     .filter(cc -> cc.getShop() != null && cc.getShop().getId() == shop.getId())
                     .collect(Collectors.toList());
@@ -199,13 +183,12 @@ public class ChatController {
     }
 
     @MessageMapping("/conversation-request")
-    public Conversation conversationCreation(@Payload ConversationRequest request){
+    public Conversation conversationCreation(@Payload ConversationRequest request) {
         User user = null;
         Shop shop = null;
         Message message = null;
 
-        if (request.getChatterType().equals("USER"))
-        {
+        if (request.getChatterType().equals("USER")) {
             user = (User) userService.getById(request.getFromId());
             shop = shopService.getShopById(request.getToId());
 
@@ -214,12 +197,12 @@ public class ChatController {
             message = Message.builder()
                     .senderImage(user.getImageurl())
                     .senderType("USER")
+                    .type(MessageType.TEXT)
                     .senderId(user.getId())
                     .sendTime(new Date())
                     .build();
 
-        }else if (request.getChatterType().equals("SHOP"))
-        {
+        } else if (request.getChatterType().equals("SHOP")) {
             shop = shopService.getShopById(request.getFromId());
             user = (User) userService.getById(request.getToId());
 

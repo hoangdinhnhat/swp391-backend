@@ -14,22 +14,19 @@ import com.swp391.backend.model.productFeedbackReply.FeedbackReply;
 import com.swp391.backend.model.productFeedbackReply.FeedbackReplyService;
 import com.swp391.backend.model.productImage.ProductImage;
 import com.swp391.backend.model.productImage.ProductImageServie;
-import com.swp391.backend.model.receiveinfo.ReceiveInfo;
+import com.swp391.backend.model.settings.SettingService;
 import com.swp391.backend.model.shop.Shop;
 import com.swp391.backend.model.shop.ShopService;
 import com.swp391.backend.model.user.User;
 import com.swp391.backend.model.user.UserService;
-import com.swp391.backend.utils.storage.ProductImageStorageService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
 import java.util.List;
-import java.util.Random;
 
 @Service
 @RequiredArgsConstructor
@@ -44,9 +41,20 @@ public class ProductService {
     private final CategoryDetailInfoService categoryDetailInfoService;
     private final ProductImageServie productImageService;
     private final FeedbackReplyService feedbackReplyService;
+    private final SettingService settingService;
 
     public List<Product> getAllProduct() {
+        Pageable pageable = PageRequest.of(0, 10, Sort.by("sold").descending().and(Sort.by("rating").descending()));
         return productRepository.findAll(Sort.by("sold").descending());
+    }
+
+    public List<Product> getAllProductForAdmin() {
+        Pageable pageable = PageRequest.of(0, 666, Sort.by("uploadTime").descending());
+        return productRepository.findAll(pageable).getContent();
+    }
+
+    public Integer getTotalProduct() {
+        return productRepository.findAll().size();
     }
 
     public List<Product> getSoldTopTenProduct() {
@@ -102,6 +110,33 @@ public class ProductService {
         return productRepository.findByShop(shop, pageable);
     }
 
+    public List<Product> getByOwnShopAndBan(Shop shop, Integer page, String filter) {
+        Pageable pageable = null;
+        switch (filter) {
+            case "name.a-z":
+                pageable = PageRequest.of(page, 5, Sort.by("name").ascending());
+                break;
+            case "name.z-a":
+                pageable = PageRequest.of(page, 5, Sort.by("name").descending());
+                break;
+            case "price.h-l":
+                pageable = PageRequest.of(page, 5, Sort.by("price").descending());
+                break;
+            case "price.l-h":
+                pageable = PageRequest.of(page, 5, Sort.by("price").ascending());
+                break;
+            case "quantity.asc":
+                pageable = PageRequest.of(page, 5, Sort.by("available").ascending());
+                break;
+            case "quantity.desc":
+                pageable = PageRequest.of(page, 5, Sort.by("available").descending());
+                break;
+            default:
+                pageable = PageRequest.of(page, 5, Sort.by("uploadTime").descending());
+        }
+        return productRepository.findByShopAndBan(shop, true, pageable);
+    }
+
     public int getMaxPage(Shop shop) {
         List<Product> list = productRepository.findByShop(shop);
         int length = list.size();
@@ -117,7 +152,7 @@ public class ProductService {
     }
 
     public int getMaxPage(Category category) {
-        List<Product> list = productRepository.findByCategory(category.getId());
+        List<Product> list = productRepository.findByCategory(category);
         int length = list.size();
         int page = Math.floorDiv(length, 40) + 1;
         return page;
@@ -170,7 +205,7 @@ public class ProductService {
             default:
                 pageable = PageRequest.of(page, numOfItem, Sort.by("sold").descending().and(Sort.by("rating").descending()));
         }
-        return productRepository.findByCategory(category.getId(), pageable);
+        return productRepository.findByCategory(category, pageable);
     }
 
     public void delete(Integer id) {
@@ -255,6 +290,7 @@ public class ProductService {
             var feedback1 = Feedback.builder()
                     .rate(4)
                     .time(new Date())
+                    .type("RATE PRODUCT")
                     .description("Pretty Fine")
                     .videoUrl("/api/v1/publics/product/feedbacks/video/1")
                     .product(product1)
@@ -284,6 +320,7 @@ public class ProductService {
             var feedback2 = Feedback.builder()
                     .rate(4)
                     .time(new Date())
+                    .type("RATE PRODUCT")
                     .description("Pretty Fine")
                     .videoUrl("/api/v1/publics/product/feedbacks/video/1")
                     .product(product1)
@@ -357,6 +394,7 @@ public class ProductService {
             var feedback1 = Feedback.builder()
                     .rate(4)
                     .time(new Date())
+                    .type("RATE PRODUCT")
                     .description("Pretty Fine")
                     .videoUrl("/api/v1/publics/product/feedbacks/video/1")
                     .product(product1)
@@ -422,6 +460,7 @@ public class ProductService {
             var feedback1 = Feedback.builder()
                     .rate(4)
                     .time(new Date())
+                    .type("RATE PRODUCT")
                     .description("Pretty Fine")
                     .videoUrl("/api/v1/publics/product/feedbacks/video/1")
                     .product(product1)
@@ -490,6 +529,7 @@ public class ProductService {
                 feedback1 = Feedback.builder()
                         .rate(4)
                         .time(new Date())
+                        .type("RATE PRODUCT")
                         .description("Pretty Fine")
                         .videoUrl("/api/v1/publics/product/feedbacks/video/1")
                         .product(product1)
@@ -499,6 +539,7 @@ public class ProductService {
                 feedback1 = Feedback.builder()
                         .rate(1)
                         .time(new Date())
+                        .type("RATE PRODUCT")
                         .description("So Bad")
                         .videoUrl("/api/v1/publics/product/feedbacks/video/1")
                         .product(product1)
@@ -508,11 +549,11 @@ public class ProductService {
             feedbackService.save(feedback1);
 
             var pfi = ProductFeedbackImage.builder()
-                    .url("/api/v1/publics/product/feedbacks/image/" + feedback1.getId() + "?imgId=1")
+                    .url("/api/v1/publics/product/feedbacks/image/" + 1 + "?imgId=1")
                     .feedback(feedback1)
                     .build();
             var pfi2 = ProductFeedbackImage.builder()
-                    .url("/api/v1/publics/product/feedbacks/image/" + feedback1.getId() + "?imgId=2")
+                    .url("/api/v1/publics/product/feedbacks/image/" + 1 + "?imgId=2")
                     .feedback(feedback1)
                     .build();
             productFeedbackImageService.save(pfi);

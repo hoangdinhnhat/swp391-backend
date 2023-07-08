@@ -51,14 +51,12 @@ public class ProductImageStorageService implements StorageService {
         }
     }
 
-    public void store(MultipartFile file, String folder, String expectedName)
-    {
+    public void store(MultipartFile file, String folder, String expectedName) {
         try {
             String root = storageProperties.getProductImageLocation();
             String newFolder = root + "/" + folder;
             Path path = Paths.get(newFolder);
-            if(!Files.exists(path))
-            {
+            if (!Files.exists(path)) {
                 Files.createDirectories(path);
             }
             store(file, folder + "/" + expectedName);

@@ -1,7 +1,6 @@
 package com.swp391.backend.model.productFeedbackImage;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
-import com.swp391.backend.model.product.Product;
 import com.swp391.backend.model.productFeedback.Feedback;
 import jakarta.persistence.*;
 import lombok.*;

@@ -1,7 +1,6 @@
 package com.swp391.backend.model.product;
 
 import com.swp391.backend.model.productSale.ProductSaleDTO;
-import com.swp391.backend.model.shop.Shop;
 import com.swp391.backend.model.shop.ShopDTO;
 import lombok.*;
 

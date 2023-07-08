@@ -11,18 +11,15 @@ import java.util.List;
 public class MessageImageService {
     private final MessageImageRepository messageImageRepository;
 
-    public MessageImage save(MessageImage messageImage)
-    {
+    public MessageImage save(MessageImage messageImage) {
         return messageImageRepository.save(messageImage);
     }
 
-    public void delete(Integer id)
-    {
+    public void delete(Integer id) {
         messageImageRepository.deleteById(id);
     }
 
-    public List<MessageImage> getByMessage(Message message)
-    {
+    public List<MessageImage> getByMessage(Message message) {
         return messageImageRepository.findByMessage(message);
     }
 }

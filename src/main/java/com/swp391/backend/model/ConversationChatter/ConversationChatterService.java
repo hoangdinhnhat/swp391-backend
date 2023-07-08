@@ -9,13 +9,11 @@ public class ConversationChatterService {
 
     private final ConversationChatterRepository conversationChatterRepository;
 
-    public ConversationChatter save(ConversationChatter conversationChatter)
-    {
+    public ConversationChatter save(ConversationChatter conversationChatter) {
         return conversationChatterRepository.save(conversationChatter);
     }
 
-    public ConversationChatter getById(Integer id)
-    {
+    public ConversationChatter getById(Integer id) {
         return conversationChatterRepository.findById(id).orElse(null);
     }
 }

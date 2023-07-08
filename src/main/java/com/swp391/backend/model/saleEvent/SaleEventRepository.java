@@ -7,9 +7,8 @@ package com.swp391.backend.model.saleEvent;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 /**
- *
  * @author Lenovo
  */
-public interface SaleEventRepository extends JpaRepository<SaleEvent, Integer>{
+public interface SaleEventRepository extends JpaRepository<SaleEvent, Integer> {
     SaleEvent findByName(String name);
 }

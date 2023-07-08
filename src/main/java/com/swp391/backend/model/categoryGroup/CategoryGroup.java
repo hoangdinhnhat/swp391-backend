@@ -6,18 +6,15 @@ package com.swp391.backend.model.categoryGroup;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
-import com.swp391.backend.model.productAttachWith.AttachWith;
 import com.swp391.backend.model.category.Category;
 import com.swp391.backend.model.product.Product;
+import com.swp391.backend.model.productAttachWith.AttachWith;
 import jakarta.persistence.*;
+import lombok.*;
 
 import java.util.List;
 
-import jakarta.transaction.Transactional;
-import lombok.*;
-
 /**
- *
  * @author Lenovo
  */
 @Getter
@@ -51,8 +48,7 @@ public class CategoryGroup {
     @JsonBackReference
     private Category category;
 
-    public CategoryGroupDTO toDTO()
-    {
+    public CategoryGroupDTO toDTO() {
         return CategoryGroupDTO.builder()
                 .id(id)
                 .name(name)

@@ -1,6 +1,5 @@
 package com.swp391.backend.controllers.publics;
 
-import com.swp391.backend.model.productDetailInfo.ProductDetailInfo;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

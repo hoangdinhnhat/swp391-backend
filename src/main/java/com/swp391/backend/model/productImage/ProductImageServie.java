@@ -11,18 +11,15 @@ import java.util.List;
 public class ProductImageServie {
     private final ProductImageRepository productImageRepository;
 
-    public ProductImage save(ProductImage productImage)
-    {
+    public ProductImage save(ProductImage productImage) {
         return productImageRepository.save(productImage);
     }
 
-    public void delete(Integer id)
-    {
+    public void delete(Integer id) {
         productImageRepository.deleteById(id);
     }
 
-    public List<ProductImage> getByProduct(Product product)
-    {
+    public List<ProductImage> getByProduct(Product product) {
         return productImageRepository.findByProduct(product);
     }
 }

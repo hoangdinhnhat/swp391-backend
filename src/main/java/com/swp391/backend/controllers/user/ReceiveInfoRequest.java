@@ -4,13 +4,11 @@
  */
 package com.swp391.backend.controllers.user;
 
-import com.swp391.backend.model.province.Province;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 
 /**
- *
  * @author Lenovo
  */
 @Data

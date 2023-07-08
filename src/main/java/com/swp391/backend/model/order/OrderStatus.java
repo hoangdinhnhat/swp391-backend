@@ -1,6 +1,6 @@
 package com.swp391.backend.model.order;
 
-public enum OrderStatus{
+public enum OrderStatus {
     PENDING,
     COMPLETED,
     SHIPPING,

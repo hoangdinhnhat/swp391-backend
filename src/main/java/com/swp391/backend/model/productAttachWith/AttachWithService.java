@@ -40,18 +40,15 @@ public class AttachWithService {
         return attach1;
     }
 
-    public AttachWith save(AttachWith attachWith)
-    {
+    public AttachWith save(AttachWith attachWith) {
         return attachWithRepository.save(attachWith);
     }
 
-    public void delete(Integer id)
-    {
+    public void delete(Integer id) {
         attachWithRepository.deleteById(id);
     }
 
-    public void init()
-    {
+    public void init() {
         var attach1 = AttachWith.builder()
                 .groupOne(categoryGroupService.getCategoryGroupById(1))
                 .groupTwo(categoryGroupService.getCategoryGroupById(3))

@@ -15,15 +15,12 @@ import com.swp391.backend.model.productImage.ProductImage;
 import com.swp391.backend.model.productSale.ProductSale;
 import com.swp391.backend.model.shop.Shop;
 import jakarta.persistence.*;
+import lombok.*;
 
 import java.util.Date;
 import java.util.List;
 
-import jakarta.transaction.Transactional;
-import lombok.*;
-
 /**
- *
  * @author Lenovo
  */
 @Getter
@@ -39,7 +36,7 @@ public class Product {
     private Integer id;
     private String name;
 
-    @Column(columnDefinition="TEXT")
+    @Column(columnDefinition = "TEXT")
     private String description;
     private double price;
     private int available;
@@ -84,18 +81,25 @@ public class Product {
 
     private boolean ban;
 
-    public double getRating()
-    {
+    public double getRating() {
         double rating = 0;
         double size = 0;
         for (var fb : feedbacks) {
             rating += fb.getRate();
             size += 1;
         }
-        if(size == 0) {
+        if (size == 0) {
             rating = 5;
-        }else rating = rating / size;
+        } else rating = rating / size;
 
         return rating;
+    }
+
+    @PrePersist
+    @PreUpdate
+    private void checkConstraint() {
+        if (available < 0) {
+            throw new IllegalStateException("The product available isn't enough");
+        }
     }
 }

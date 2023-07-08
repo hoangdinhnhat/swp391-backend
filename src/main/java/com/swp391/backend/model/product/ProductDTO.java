@@ -1,17 +1,12 @@
 package com.swp391.backend.model.product;
 
 import com.swp391.backend.model.category.CategoryDTO;
-import com.swp391.backend.model.categoryGroup.CategoryGroup;
 import com.swp391.backend.model.categoryGroup.CategoryGroupDTO;
 import com.swp391.backend.model.productDetailInfo.ProductDetailInfo;
-import com.swp391.backend.model.productFeedback.Feedback;
 import com.swp391.backend.model.productFeedback.FeedbackDTO;
 import com.swp391.backend.model.productImage.ProductImage;
-import com.swp391.backend.model.productSale.ProductSale;
 import com.swp391.backend.model.productSale.ProductSaleDTO;
-import com.swp391.backend.model.shop.Shop;
 import com.swp391.backend.model.shop.ShopDTO;
-import jakarta.persistence.Lob;
 import lombok.*;
 
 import java.util.List;
@@ -29,6 +24,7 @@ public class ProductDTO {
     private double rating;
     private int available;
     private int sold;
+    private boolean ban;
     private String video;
     private CategoryDTO category;
     private CategoryGroupDTO categoryGroup;

@@ -16,7 +16,7 @@ public class FeedbackReply {
     @GeneratedValue
     private Integer id;
 
-    @Column(columnDefinition="TEXT")
+    @Column(columnDefinition = "TEXT")
     private String content;
 
     @ManyToOne

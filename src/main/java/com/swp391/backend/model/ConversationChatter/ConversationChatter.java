@@ -5,10 +5,8 @@ import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.swp391.backend.model.conversation.Conversation;
 import com.swp391.backend.model.shop.Shop;
 import com.swp391.backend.model.user.User;
-import lombok.*;
-
 import jakarta.persistence.*;
-import org.springframework.transaction.annotation.Transactional;
+import lombok.*;
 
 @Getter
 @Setter

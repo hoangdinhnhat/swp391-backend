@@ -1,6 +1,5 @@
 package com.swp391.backend.model.subscription;
 
-import com.swp391.backend.model.productSale.ProductSaleKey;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
 import lombok.Data;

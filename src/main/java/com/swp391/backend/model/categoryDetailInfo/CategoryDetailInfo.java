@@ -1,7 +1,6 @@
 package com.swp391.backend.model.categoryDetailInfo;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
-import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.swp391.backend.model.category.Category;
 import com.swp391.backend.model.productDetailInfo.ProductDetailInfo;
 import jakarta.persistence.*;

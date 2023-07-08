@@ -9,13 +9,11 @@ public class DistrictService {
 
     private final DistrictRepository districtRepository;
 
-    public District save(District district)
-    {
+    public District save(District district) {
         return districtRepository.save(district);
     }
 
-    public void deleteById(Integer id)
-    {
+    public void deleteById(Integer id) {
         districtRepository.deleteById(id);
     }
 }

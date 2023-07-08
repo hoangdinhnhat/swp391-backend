@@ -15,13 +15,6 @@ import com.swp391.backend.utils.mail.ConfirmCodeTemplete;
 import com.swp391.backend.utils.mail.EmailSender;
 import com.swp391.backend.utils.mail.ForgetCodeTemplete;
 import com.swp391.backend.utils.mail.SecurityConfirmTemplete;
-import jakarta.servlet.http.Cookie;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.util.Date;
-import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -31,8 +24,12 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.Date;
+import java.util.UUID;
+
 /**
- *
  * @author Lenovo
  */
 @Service
@@ -153,6 +150,7 @@ public class AuthenticationService {
                     .locked(false)
                     .password(null)
                     .role(Role.CUSTOMER)
+                    .joinAt(new Date())
                     .build();
         }
         UsernamePasswordAuthenticationToken usernameToken = new UsernamePasswordAuthenticationToken(user, null, user.getAuthorities());
@@ -195,6 +193,7 @@ public class AuthenticationService {
                 .imageurl("/api/v1/users/info/avatar")
                 .password(passwordEncoder.encode(request.getPassword()))
                 .role(Role.CUSTOMER)
+                .joinAt(new Date())
                 .build();
         userService.save(user);
         String confToken = UUID.randomUUID().toString();
@@ -249,9 +248,8 @@ public class AuthenticationService {
         if (confToken.getConfirmedAt() != null) {
             throw new IllegalStateException("Email already confirmed");
         }
-        
-        if(confToken.getExpiredAt().isAfter(LocalDateTime.now()))
-        {
+
+        if (confToken.getExpiredAt().isAfter(LocalDateTime.now())) {
             throw new IllegalStateException("The email was sent within minutes. Please double-check your email.");
         }
 

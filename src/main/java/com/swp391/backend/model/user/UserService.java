@@ -7,15 +7,19 @@ package com.swp391.backend.model.user;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.Date;
+import java.util.List;
+
 /**
- *
  * @author Lenovo
  */
 @Service
@@ -32,42 +36,47 @@ public class UserService implements UserDetailsService {
         return user;
     }
 
-    public UserDetails getById(Integer id)
-    {
+    public UserDetails getById(Integer id) {
         UserDetails user = repository.findById(id)
                 .orElseThrow(() -> new UsernameNotFoundException("User ID not found"));
 
         return user;
     }
-    
+
     public UserDetails loadUserByUsername(String username, String filter) throws UsernameNotFoundException {
         User user = (User) repository.findByEmail(username)
                 .orElse(null);
-        if(user == null)
-        {
+        if (user == null) {
             return null;
         }
         return user;
     }
-    
-    public UserDetails save(User user)
-    {
+
+    public UserDetails save(User user) {
         return repository.save(user);
     }
-    
-    public boolean isExist(String email)
-    {
+
+    public boolean isExist(String email) {
         return repository.findByEmail(email).isPresent();
     }
-    
-    public void enableUser(User user)
-    {
+
+    public void enableUser(User user) {
         user.setEnabled(true);
         repository.save(user);
     }
 
-    public void init()
-    {
+    public Integer getNewUserInMonth() {
+        Integer newUsers = repository.getNewUserInMonth();
+        if (newUsers == null) newUsers = 0;
+        return newUsers;
+    }
+
+    public List<User> getAllUser() {
+        Pageable pageable = PageRequest.of(0, 666, Sort.by("joinAt").descending());
+        return repository.findAll(pageable).getContent();
+    }
+
+    public void init() {
         var user1 = User.builder()
                 .firstname("Bao")
                 .lastname("Tran Thien Thanh")
@@ -78,6 +87,7 @@ public class UserService implements UserDetailsService {
                 .imageurl("/api/v1/publics/user/avatar/tranthienthanhbao@gmail.com")
                 .password(new BCryptPasswordEncoder().encode("1234"))
                 .role(Role.CUSTOMER)
+                .joinAt(new Date())
                 .build();
         save(user1);
 
@@ -91,6 +101,7 @@ public class UserService implements UserDetailsService {
                 .imageurl("/api/v1/publics/user/avatar/vuducthien@gmail.com")
                 .password(new BCryptPasswordEncoder().encode("1234"))
                 .role(Role.CUSTOMER)
+                .joinAt(new Date())
                 .build();
         save(user2);
 
@@ -104,6 +115,7 @@ public class UserService implements UserDetailsService {
                 .imageurl("/api/v1/publics/user/avatar/nhathdse160377@fpt.edu.vn")
                 .password(new BCryptPasswordEncoder().encode("1234"))
                 .role(Role.CUSTOMER)
+                .joinAt(new Date())
                 .build();
         save(user3);
     }

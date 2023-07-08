@@ -8,13 +8,11 @@ import org.springframework.stereotype.Service;
 public class ConversationService {
     private final ConversationRepository conversationRepository;
 
-    public Conversation save(Conversation conversation)
-    {
+    public Conversation save(Conversation conversation) {
         return conversationRepository.save(conversation);
     }
 
-    public Conversation getById(Integer id)
-    {
+    public Conversation getById(Integer id) {
         return conversationRepository.findById(id).orElse(null);
     }
 }

@@ -6,18 +6,13 @@ package com.swp391.backend.model.saleEvent;
 
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.swp391.backend.model.productSale.ProductSale;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.Id;
-import jakarta.persistence.OneToMany;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
+import lombok.*;
+
 import java.util.Date;
 import java.util.List;
 
-import lombok.*;
-
 /**
- *
  * @author Lenovo
  */
 @Getter
@@ -35,7 +30,7 @@ public class SaleEvent {
     private Date start;
     private Date endding;
     private int percent;
-    
+
     @OneToMany(mappedBy = "saleEvent")
     @JsonManagedReference
     private List<ProductSale> product_sales;

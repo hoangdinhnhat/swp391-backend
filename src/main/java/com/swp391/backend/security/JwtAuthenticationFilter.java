@@ -4,6 +4,7 @@
  */
 package com.swp391.backend.security;
 
+import com.swp391.backend.model.counter.CounterService;
 import com.swp391.backend.model.user.User;
 import com.swp391.backend.model.user.UserRepository;
 import com.swp391.backend.model.user.UserService;
@@ -12,8 +13,6 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.util.Date;
 import lombok.RequiredArgsConstructor;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -23,8 +22,10 @@ import org.springframework.security.web.authentication.WebAuthenticationDetailsS
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
+import java.io.IOException;
+import java.util.Date;
+
 /**
- *
  * @author Lenovo
  */
 @Component
@@ -34,6 +35,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtService jwtService;
     private final UserRepository userRepository;
     private final UserService userService;
+    private final CounterService counterService;
 
     @Override
     protected void doFilterInternal(
@@ -69,6 +71,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             if (jwtService.isTokenValid(jwt, userDetails)) {
                 User appUser = (User) userDetails;
                 appUser.setTimeout(new Date(System.currentTimeMillis() + 1000 * 60 * 30));
+
+                var counter = counterService.getById("VISIT_PAGE");
+                counter.setValue(counter.getValue() + 1);
+                counterService.save(counter);
+
                 userRepository.save(appUser);
                 UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
                 authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));

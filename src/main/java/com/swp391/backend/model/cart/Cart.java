@@ -3,7 +3,6 @@ package com.swp391.backend.model.cart;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.swp391.backend.model.cartProduct.CartProduct;
-import com.swp391.backend.model.product.Product;
 import com.swp391.backend.model.user.User;
 import jakarta.persistence.*;
 import lombok.*;

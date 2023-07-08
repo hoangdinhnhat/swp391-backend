@@ -9,13 +9,11 @@ public class WardService {
 
     private final WardRepository wardRepository;
 
-    public Ward save(Ward ward)
-    {
+    public Ward save(Ward ward) {
         return wardRepository.save(ward);
     }
 
-    public void deleteById(Integer id)
-    {
+    public void deleteById(Integer id) {
         wardRepository.deleteById(id);
     }
 }

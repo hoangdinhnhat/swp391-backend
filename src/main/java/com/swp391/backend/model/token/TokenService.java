@@ -5,13 +5,13 @@
 package com.swp391.backend.model.token;
 
 import com.swp391.backend.model.user.User;
-import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+
 /**
- *
  * @author Lenovo
  */
 @Service
@@ -26,9 +26,8 @@ public class TokenService {
                 .orElse(null);
         return token;
     }
-    
-    public Token findByValue(String value)
-    {
+
+    public Token findByValue(String value) {
         Token token = tokenRepository.findByValue(value)
                 .orElse(null);
         return token;

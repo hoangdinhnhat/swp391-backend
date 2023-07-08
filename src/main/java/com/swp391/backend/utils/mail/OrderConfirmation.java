@@ -6,7 +6,6 @@
 package com.swp391.backend.utils.mail;
 
 /**
- *
  * @author Lenovo
  */
 public class OrderConfirmation {

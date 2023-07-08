@@ -13,18 +13,15 @@ public class CategoryDetailInfoService {
     private final CategoryDetailInfoRepository categoryDetailInfoRepository;
     private final CategoryService categoryService;
 
-    public List<CategoryDetailInfo> getByCategory(Category category)
-    {
+    public List<CategoryDetailInfo> getByCategory(Category category) {
         return categoryDetailInfoRepository.findByCategory(category);
     }
 
-    public CategoryDetailInfo save(CategoryDetailInfo categoryDetailInfo)
-    {
+    public CategoryDetailInfo save(CategoryDetailInfo categoryDetailInfo) {
         return categoryDetailInfoRepository.save(categoryDetailInfo);
     }
 
-    public void init()
-    {
+    public void init() {
         CategoryDetailInfo d1 = CategoryDetailInfo.builder()
                 .name("Age")
                 .category(categoryService.getById(1))

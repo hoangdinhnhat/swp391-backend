@@ -1,10 +1,11 @@
 package com.swp391.backend.model.shop;
 
 import com.swp391.backend.model.shopAddress.ShopAddress;
+import com.swp391.backend.model.shopPackage.ShopPackage;
 import lombok.*;
 
-import java.time.LocalDateTime;
 import java.util.Date;
+import java.util.List;
 
 @Getter
 @Setter
@@ -20,5 +21,10 @@ public class ShopDTO {
     private Date joinTime;
     private int followers;
     private int products;
+    private boolean ban;
+    private int numberOfWarning;
     private ShopAddress address;
+    private double wallet;
+    private String phone;
+    private List<ShopPackage> shopPackages;
 }

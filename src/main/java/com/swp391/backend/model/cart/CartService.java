@@ -13,12 +13,11 @@ public class CartService {
         return cartRepository.save(cart);
     }
 
-    public Cart findById(Integer id)
-    {
+    public Cart findById(Integer id) {
         return cartRepository.findById(id).orElse(null);
     }
-    public Cart findByUser(User user)
-    {
+
+    public Cart findByUser(User user) {
         return cartRepository.findByUser(user);
     }
 }

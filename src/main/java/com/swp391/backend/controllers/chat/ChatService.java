@@ -12,7 +12,6 @@ import com.swp391.backend.model.message.Message;
 import com.swp391.backend.model.message.MessageService;
 import com.swp391.backend.model.message.MessageType;
 import com.swp391.backend.model.shop.Shop;
-import com.swp391.backend.model.shop.ShopDTO;
 import com.swp391.backend.model.shop.ShopService;
 import com.swp391.backend.model.user.User;
 import com.swp391.backend.model.user.UserService;
@@ -35,8 +34,7 @@ public class ChatService {
     private final ShopService shopService;
     private final UserService userService;
 
-    public void init()
-    {
+    public void init() {
         User user = (User) userService.loadUserByUsername("vuducthien@gmail.com");
 
         Shop shop = shopService.getShopById(1);
@@ -96,11 +94,9 @@ public class ChatService {
 
     }
 
-    public Message sendMessage(MessageRequest request)
-    {
+    public Message sendMessage(MessageRequest request) {
         Message message = null;
-        if (request.getChatterType().equals("USER"))
-        {
+        if (request.getChatterType().equals("USER")) {
             User user = (User) userService.getById(request.getFromId());
             Conversation conversation = conversationService.getById(request.getConversationId());
 
@@ -116,8 +112,7 @@ public class ChatService {
                     .build();
 
             messageService.save(message);
-        }else if (request.getChatterType().equals("SHOP"))
-        {
+        } else if (request.getChatterType().equals("SHOP")) {
             Shop shop = shopService.getShopById(request.getFromId());
             Conversation conversation = conversationService.getById(request.getConversationId());
 
@@ -137,11 +132,9 @@ public class ChatService {
         return message;
     }
 
-    public Message sendMediaMessage(MessageRequest request, MessageType messageType)
-    {
+    public Message sendMediaMessage(MessageRequest request, MessageType messageType) {
         Message message = null;
-        if (request.getChatterType().equals("USER"))
-        {
+        if (request.getChatterType().equals("USER")) {
             User user = (User) userService.getById(request.getFromId());
             Conversation conversation = conversationService.getById(request.getConversationId());
 
@@ -156,8 +149,7 @@ public class ChatService {
                     .build();
 
             messageService.save(message);
-        }else if (request.getChatterType().equals("SHOP"))
-        {
+        } else if (request.getChatterType().equals("SHOP")) {
             Shop shop = shopService.getShopById(request.getFromId());
             Conversation conversation = conversationService.getById(request.getConversationId());
 

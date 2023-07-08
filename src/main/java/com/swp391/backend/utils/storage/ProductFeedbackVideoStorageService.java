@@ -73,7 +73,7 @@ public class ProductFeedbackVideoStorageService implements StorageService {
             Resource resource = new UrlResource(file.toUri());
             if (resource.exists() || resource.isReadable()) {
                 return resource;
-            }else {
+            } else {
                 throw new StorageFileNotFoundException(
                         "Could not read file: " + filename);
 
