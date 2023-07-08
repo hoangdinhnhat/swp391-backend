@@ -13,6 +13,7 @@ import com.swp391.backend.model.productDetailInfo.ProductDetailInfo;
 import com.swp391.backend.model.productFeedback.Feedback;
 import com.swp391.backend.model.productImage.ProductImage;
 import com.swp391.backend.model.productSale.ProductSale;
+import com.swp391.backend.model.report.Report;
 import com.swp391.backend.model.shop.Shop;
 import jakarta.persistence.*;
 import lombok.*;
@@ -78,6 +79,10 @@ public class Product {
     @OneToMany(mappedBy = "product")
     @JsonManagedReference
     private List<OrderDetails> orderDetails;
+
+    @OneToMany(mappedBy = "product")
+    @JsonBackReference
+    private List<Report> reports;
 
     private boolean ban;
 

@@ -11,6 +11,7 @@ import com.swp391.backend.model.cart.Cart;
 import com.swp391.backend.model.notification.Notification;
 import com.swp391.backend.model.productFeedback.Feedback;
 import com.swp391.backend.model.receiveinfo.ReceiveInfo;
+import com.swp391.backend.model.report.Report;
 import com.swp391.backend.model.shop.Shop;
 import com.swp391.backend.model.subscription.Subscription;
 import com.swp391.backend.model.token.Token;
@@ -81,6 +82,10 @@ public class User implements UserDetails {
     @OneToMany(mappedBy = "user")
     @JsonBackReference
     private List<ConversationChatter> conversationChatters;
+
+    @OneToMany(mappedBy = "reporter")
+    @JsonBackReference
+    private List<Report> reports;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

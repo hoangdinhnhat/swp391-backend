@@ -3,6 +3,7 @@ package com.swp391.backend.model.notification;
 import com.swp391.backend.model.shop.Shop;
 import com.swp391.backend.model.user.User;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -30,10 +31,12 @@ public class NotificationService {
     }
 
     public List<Notification> getNotificationByUser(User user) {
-        return notificationRepository.findByUser(user);
+        Sort sort = Sort.by("createdAt").descending();
+        return notificationRepository.findByUser(user, sort);
     }
 
     public List<Notification> getNotificationByShop(Shop shop) {
-        return notificationRepository.findByShop(shop);
+        Sort sort = Sort.by("createdAt").descending();
+        return notificationRepository.findByShop(shop, sort);
     }
 }

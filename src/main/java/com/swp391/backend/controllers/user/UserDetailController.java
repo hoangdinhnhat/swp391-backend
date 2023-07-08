@@ -37,6 +37,9 @@ import com.swp391.backend.model.province.Province;
 import com.swp391.backend.model.province.ProvinceService;
 import com.swp391.backend.model.receiveinfo.ReceiveInfo;
 import com.swp391.backend.model.receiveinfo.ReceiveInfoService;
+import com.swp391.backend.model.report.Report;
+import com.swp391.backend.model.report.ReportRequest;
+import com.swp391.backend.model.report.ReportService;
 import com.swp391.backend.model.shop.Shop;
 import com.swp391.backend.model.shop.ShopDTO;
 import com.swp391.backend.model.shop.ShopService;
@@ -95,6 +98,7 @@ public class UserDetailController {
     private final FeedbackService feedbackService;
     private final ProductFeedbackImageService productFeedbackImageService;
     private final TemporaryStorage temporaryStorage;
+    private final ReportService reportService;
     private ZaloPayService zaloPayService = ZaloPayService.gI();
 
     @Autowired
@@ -388,7 +392,7 @@ public class UserDetailController {
             userService.save(user);
         }
         Product product = productService.getProductById(product_id);
-        if (product.getShop().getUser().getId() == user.getId()) {
+        if (product.getShop().getUser().getId() == user.getId() || product.isBan()) {
             return ResponseEntity.badRequest().build();
         }
         CartProduct findedCartProduct = cartProductService.findByCartAndProduct(cart, product);
@@ -501,8 +505,12 @@ public class UserDetailController {
                         .id(id)
                         .build();
                 orderDetailsService.save(orderDetails);
-                product1.setAvailable(product1.getAvailable() - tt.getQuantity());
-                productService.save(product1);
+                try {
+                    product1.setAvailable(product1.getAvailable() - tt.getQuantity());
+                    productService.save(product1);
+                } catch (IllegalStateException e) {
+                    throw new IllegalStateException("Product " + product1.getName() + " available isn't enough");
+                }
 
                 CartProductKey cpi = new CartProductKey();
                 cpi.cartId = cart.getId();
@@ -739,6 +747,46 @@ public class UserDetailController {
 
         orderDetailsService.setFeedbacked(orderDetails);
 
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/product/report/{id}")
+    public ResponseEntity<String> sendProductReport(@RequestBody ReportRequest request) {
+        Product product = productService.getProductById(request.getProductId());
+        User user = (User) userService.getById(request.getReporterId());
+        if (product == null || user == null) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        Report report = Report.builder()
+                .reporter(user)
+                .product(product)
+                .reasonType(request.getReasonType())
+                .reasonSpecific(request.getReasonSpecific())
+                .action("UNPROCESS")
+                .build();
+
+        reportService.save(report);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/shop/report/{id}")
+    public ResponseEntity<String> sendShopReport(@RequestBody ReportRequest request) {
+        Shop shop = shopService.getShopById(request.getShopId());
+        User user = (User) userService.getById(request.getReporterId());
+        if (shop == null || user == null) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        Report report = Report.builder()
+                .reporter(user)
+                .shop(shop)
+                .reasonType(request.getReasonType())
+                .reasonSpecific(request.getReasonSpecific())
+                .action("UNPROCESS")
+                .build();
+
+        reportService.save(report);
         return ResponseEntity.ok().build();
     }
 }

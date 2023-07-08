@@ -10,6 +10,7 @@ import com.swp391.backend.model.ConversationChatter.ConversationChatter;
 import com.swp391.backend.model.notification.Notification;
 import com.swp391.backend.model.order.Order;
 import com.swp391.backend.model.product.Product;
+import com.swp391.backend.model.report.Report;
 import com.swp391.backend.model.shopAddress.ShopAddress;
 import com.swp391.backend.model.shopPackage.ShopPackage;
 import com.swp391.backend.model.subscription.Subscription;
@@ -70,6 +71,10 @@ public class Shop {
     @OneToMany(mappedBy = "shop")
     @JsonBackReference
     private List<ShopPackage> shopPackages;
+
+    @OneToMany(mappedBy = "shop")
+    @JsonBackReference
+    private List<Report> reports;
 
     public double getRating() {
         double rating = 0;

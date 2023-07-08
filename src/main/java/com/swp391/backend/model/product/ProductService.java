@@ -145,7 +145,7 @@ public class ProductService {
     }
 
     public int getMaxPage(String search) {
-        List<Product> list = productRepository.findByNameContainingIgnoreCase(search);
+        List<Product> list = productRepository.findByNameContainingIgnoreCaseAndBan(search, false);
         int length = list.size();
         int page = Math.floorDiv(length, 40) + 1;
         return page;
@@ -180,7 +180,7 @@ public class ProductService {
             default:
                 pageable = PageRequest.of(page, 40, Sort.by("sold").descending().and(Sort.by("rating").descending()));
         }
-        return productRepository.findByNameContainingIgnoreCase(search, pageable);
+        return productRepository.findByNameContainingIgnoreCaseAndBan(search, false, pageable);
     }
 
     public Product save(Product product) {

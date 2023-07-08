@@ -2,12 +2,18 @@ package com.swp391.backend.controllers.admin;
 
 import com.swp391.backend.model.category.CategoryService;
 import com.swp391.backend.model.counter.CounterService;
+import com.swp391.backend.model.notification.Notification;
+import com.swp391.backend.model.notification.NotificationService;
 import com.swp391.backend.model.order.OrderService;
+import com.swp391.backend.model.product.Product;
 import com.swp391.backend.model.product.ProductDTO;
 import com.swp391.backend.model.product.ProductService;
 import com.swp391.backend.model.receiveinfo.ReceiveInfoService;
+import com.swp391.backend.model.report.Report;
+import com.swp391.backend.model.report.ReportService;
 import com.swp391.backend.model.settings.Setting;
 import com.swp391.backend.model.settings.SettingService;
+import com.swp391.backend.model.shop.Shop;
 import com.swp391.backend.model.shop.ShopDTO;
 import com.swp391.backend.model.shop.ShopService;
 import com.swp391.backend.model.shopPackage.ShopPackageService;
@@ -19,7 +25,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequiredArgsConstructor
@@ -35,6 +43,8 @@ public class AdminController {
     private final CategoryService categoryService;
     private final ShopPackageService shopPackageService;
     private final CounterService counterService;
+    private final NotificationService notificationService;
+    private final ReportService reportService;
 
     @GetMapping("/analyst/total")
     public ResponseEntity<List<Integer>> getTotalOrders() {
@@ -123,6 +133,151 @@ public class AdminController {
         var savedSettings = settingService.saveAll(settings);
         return ResponseEntity.ok().body(savedSettings);
     }
+
+    @GetMapping("/management/report/product")
+    public ResponseEntity<List<Report>> getProductReports() {
+        var reports = reportService.getProductReport();
+        return ResponseEntity.ok().body(reports);
+    }
+
+    @GetMapping("/management/report/shop")
+    public ResponseEntity<List<Report>> getShopReports() {
+        var reports = reportService.getShopReport();
+        return ResponseEntity.ok().body(reports);
+    }
+
+    @PostMapping("/action/product/{id}")
+    public ResponseEntity<String> actionProduct(@PathVariable("id") Integer productId, @RequestParam("action") Optional<String> act) {
+        String action = act.orElse(null);
+        Product product = productService.getProductById(productId);
+        if (action == null || product == null) return ResponseEntity.badRequest().build();
+
+        Notification notification = Notification.builder()
+                .imageUrl("/api/v1/publics/shop/image/-1")
+                .shop(product.getShop())
+                .createdAt(new Date())
+                .read(false)
+                .build();
+
+        if (action.equals("BAN")) {
+            notification.setTitle("Product has been banned.");
+            notification.setContent(String.format("Product %s has been banned by Admin. The product will no longer be displayed on the system until the optimal solution is found."));
+
+            product.setBan(true);
+        } else if (action.equals("RECOVER")) {
+            product.setBan(false);
+        }
+
+        productService.save(product);
+        notificationService.save(notification);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/action/user/{id}")
+    public ResponseEntity<String> actionUser(@PathVariable("id") Integer id, @RequestParam("action") Optional<String> act) {
+        String action = act.orElse(null);
+        User user = (User) userService.getById(id);
+        if (action == null || user == null) return ResponseEntity.badRequest().build();
+
+        Notification notification = Notification.builder()
+                .imageUrl(user.getImageurl())
+                .user(user)
+                .createdAt(new Date())
+                .read(false)
+                .build();
+
+        if (action.equals("BAN")) {
+            notification.setTitle("Admin banned your account");
+            notification.setContent("Your account has been banned by the admin. You will not be able to use our services until you find the optimal solution.");
+
+            user.setEnabled(false);
+            user.setLogout(true);
+        } else if (action.equals("RECOVER")) {
+            notification.setTitle("Admin has unlocked your shop");
+            notification.setContent("Your account has been unlocked by admin. Wish you happy shopping.");
+
+            user.setEnabled(true);
+        }
+
+        userService.save(user);
+        notificationService.save(notification);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/action/shop/{id}")
+    public ResponseEntity<String> actionShop(
+            @PathVariable("id") Integer shopId,
+            @RequestParam("action") Optional<String> act
+    ) {
+        String action = act.orElse(null);
+        Shop shop = shopService.getShopById(shopId);
+        if (action == null || shop == null) return ResponseEntity.badRequest().build();
+
+        Notification notification = Notification.builder()
+                .imageUrl("/api/v1/publics/shop/image/-1")
+                .shop(shop)
+                .createdAt(new Date())
+                .read(false)
+                .build();
+
+        if (action.equals("BAN")) {
+            notification.setTitle("Admin banned your shop");
+            notification.setContent("Your shop has been banned by admin. Now the shop will not be able to post new products until the optimal solution is found.");
+
+            shop.setBan(true);
+        } else if (action.equals("RECOVER")) {
+            notification.setTitle("Admin has unlocked your shop");
+            notification.setContent("Your shop has been allowed to operate again by admin. Now the shop can post new products for sale. Good luck with your shop.");
+
+            shop.setBan(false);
+        }
+
+        shopService.save(shop);
+        notificationService.save(notification);
+        return ResponseEntity.ok().build();
+    }
+
+//    @PostMapping("/report/shop/{id}")
+//    public ResponseEntity<String> reportProcessShop(
+//            @PathVariable("id") Integer shopId,
+//            @RequestParam("action") Optional<String> act,
+//            @RequestParam("reportId") Optional<Integer> rId
+//    ) {
+//        String action = act.orElse(null);
+//        Shop shop = shopService.getShopById(shopId);
+//        if (action == null || shop == null) return ResponseEntity.badRequest().build();
+//
+//        Notification notification = Notification.builder()
+//                .imageUrl("/api/v1/publics/product/image/" + product.getId() + "?imgId=1")
+//                .shop(shop)
+//                .createdAt(new Date())
+//                .read(false)
+//                .build();
+//
+//        if (action.equals("BAN")) {
+//            shop.setBan(true);
+//        } else if (action.equals("WARNING")) {
+//            Integer reportId = rId.orElse(null);
+//            if (reportId == null) return ResponseEntity.badRequest().build();
+//
+//            int nOw = shop.getNumberOfWarning();
+//            if (nOw == 3) {
+//                shop.setNumberOfWarning(0);
+//                shop.setBan(true);
+//            } else {
+//                notification.setTitle("Admin confirmed the reported product");
+//                notification.setContent("Product %s has just been reported for the reason: Prohibited products (wild animals, 18+, ...). And admin has confirmed that is correct. Please take a look for the next time.");
+//
+//                notificationService.save(notification);
+//
+//                shop.setNumberOfWarning(nOw + 1);
+//            }
+//        }
+//
+//        notificationService.save(notification);
+//        shopService.save(shop);
+//        return ResponseEntity.ok().build();
+//    }
 
     @GetMapping("/wallet/")
     public ResponseEntity<Double> getWallet() {

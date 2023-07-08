@@ -19,11 +19,11 @@ import java.util.List;
  * @author Lenovo
  */
 public interface ProductRepository extends PagingAndSortingRepository<Product, Integer>, JpaRepository<Product, Integer> {
-    List<Product> findByCategoryGroup(CategoryGroup cg, Pageable pageable);
+    List<Product> findByCategoryGroupAndBan(CategoryGroup cg, boolean ban, Pageable pageable);
 
-    List<Product> findByNameContainingIgnoreCase(String search, Pageable pageable);
+    List<Product> findByNameContainingIgnoreCaseAndBan(String search, boolean ban, Pageable pageable);
 
-    List<Product> findByNameContainingIgnoreCase(String search);
+    List<Product> findByNameContainingIgnoreCaseAndBan(String search, boolean ban);
 
     List<Product> findAll(Sort sort);
 
