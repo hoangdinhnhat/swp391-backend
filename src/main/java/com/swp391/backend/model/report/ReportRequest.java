@@ -13,5 +13,4 @@ public class ReportRequest {
     private Integer productId;
     private String reasonType;
     private String reasonSpecific;
-    private String action;
 }

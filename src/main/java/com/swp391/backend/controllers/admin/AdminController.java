@@ -10,6 +10,7 @@ import com.swp391.backend.model.product.ProductDTO;
 import com.swp391.backend.model.product.ProductService;
 import com.swp391.backend.model.receiveinfo.ReceiveInfoService;
 import com.swp391.backend.model.report.Report;
+import com.swp391.backend.model.report.ReportDTO;
 import com.swp391.backend.model.report.ReportService;
 import com.swp391.backend.model.settings.Setting;
 import com.swp391.backend.model.settings.SettingService;
@@ -135,8 +136,12 @@ public class AdminController {
     }
 
     @GetMapping("/management/report/product")
-    public ResponseEntity<List<Report>> getProductReports() {
-        var reports = reportService.getProductReport();
+    public ResponseEntity<List<ReportDTO>> getProductReports() {
+        var reports = reportService.getProductReport()
+                .stream()
+                .map(Report::toDto)
+                .toList();
+
         return ResponseEntity.ok().body(reports);
     }
 
@@ -153,22 +158,32 @@ public class AdminController {
         if (action == null || product == null) return ResponseEntity.badRequest().build();
 
         Notification notification = Notification.builder()
-                .imageUrl("/api/v1/publics/shop/image/-1")
+                .imageUrl(product.getImages().get(0).getUrl())
                 .shop(product.getShop())
                 .createdAt(new Date())
                 .read(false)
                 .build();
 
+        String notiTitle = "";
+        String notiContent = "";
         if (action.equals("BAN")) {
-            notification.setTitle("Product has been banned.");
-            notification.setContent(String.format("Product %s has been banned by Admin. The product will no longer be displayed on the system until the optimal solution is found."));
+            notiTitle = "Product has been banned.";
+            notiContent = String.format("Product %s has been banned by Admin. " +
+                    "The product will no longer be displayed on the system until the optimal solution is found.", product.getName());
 
             product.setBan(true);
         } else if (action.equals("RECOVER")) {
+            notiTitle = "Your product is allowed to work again.";
+            notiContent = String.format("Your shop's %s product has been re-approved by the Admin. " +
+                    "Good luck with your shop!", product.getName());
+
             product.setBan(false);
         }
 
         productService.save(product);
+
+        notification.setTitle(notiTitle);
+        notification.setContent(notiContent);
         notificationService.save(notification);
         return ResponseEntity.ok().build();
     }
@@ -237,47 +252,109 @@ public class AdminController {
         return ResponseEntity.ok().build();
     }
 
-//    @PostMapping("/report/shop/{id}")
-//    public ResponseEntity<String> reportProcessShop(
-//            @PathVariable("id") Integer shopId,
-//            @RequestParam("action") Optional<String> act,
-//            @RequestParam("reportId") Optional<Integer> rId
-//    ) {
-//        String action = act.orElse(null);
-//        Shop shop = shopService.getShopById(shopId);
-//        if (action == null || shop == null) return ResponseEntity.badRequest().build();
-//
-//        Notification notification = Notification.builder()
-//                .imageUrl("/api/v1/publics/product/image/" + product.getId() + "?imgId=1")
-//                .shop(shop)
-//                .createdAt(new Date())
-//                .read(false)
-//                .build();
-//
-//        if (action.equals("BAN")) {
-//            shop.setBan(true);
-//        } else if (action.equals("WARNING")) {
-//            Integer reportId = rId.orElse(null);
-//            if (reportId == null) return ResponseEntity.badRequest().build();
-//
-//            int nOw = shop.getNumberOfWarning();
-//            if (nOw == 3) {
-//                shop.setNumberOfWarning(0);
-//                shop.setBan(true);
-//            } else {
-//                notification.setTitle("Admin confirmed the reported product");
-//                notification.setContent("Product %s has just been reported for the reason: Prohibited products (wild animals, 18+, ...). And admin has confirmed that is correct. Please take a look for the next time.");
-//
-//                notificationService.save(notification);
-//
-//                shop.setNumberOfWarning(nOw + 1);
-//            }
-//        }
-//
-//        notificationService.save(notification);
-//        shopService.save(shop);
-//        return ResponseEntity.ok().build();
-//    }
+    public void shopProcesser(Shop shop, String action)
+    {
+        Notification notification = Notification.builder()
+                .imageUrl("/api/v1/publics/shop/image/-1")
+                .shop(shop)
+                .createdAt(new Date())
+                .read(false)
+                .build();
+
+        if (action.equals("BAN")) {
+            notification.setTitle("Admin banned your shop");
+            notification.setContent("Your shop has been banned by admin. Now the shop will not be able to post new products until the optimal solution is found.");
+
+            shop.setBan(true);
+        } else if (action.equals("WARNING")) {
+
+            notification.setTitle(String.format("%dst warning by admin!", shop.getNumberOfWarning()));
+            notification.setContent("Your shop has been reported and admin confirmed the report is correct. Therefore, your shop has been warned for the " + shop.getNumberOfWarning() + "st time. If the number of warnings exceeds 3 times, your shop will be banned from posting new products.");
+
+            int nOw = shop.getNumberOfWarning();
+            if (nOw == 3) {
+                notification.setTitle("Admin banned your shop");
+                notification.setContent("Your shop has been banned by admin. Now the shop will not be able to post new products until the optimal solution is found.");
+
+                shop.setNumberOfWarning(0);
+                shop.setBan(true);
+            } else {
+                shop.setNumberOfWarning(nOw + 1);
+
+                notification.setTitle(String.format("%dst warning by admin!", shop.getNumberOfWarning()));
+                notification.setContent("Your shop has been reported and admin confirmed the report is correct. Therefore, your shop has been warned for the " + shop.getNumberOfWarning() + "st time. If the number of warnings exceeds 3 times, your shop will be banned from posting new products.");
+            }
+        }
+
+        notificationService.save(notification);
+        shopService.save(shop);
+    }
+
+    @PostMapping("/report/shop/{id}")
+    public ResponseEntity<String> reportProcessShop(
+            @PathVariable("id") Integer reportId,
+            @RequestParam("action") Optional<String> act
+    ) {
+        String action = act.orElse(null);
+        Report report = reportService.getById(reportId);
+        if (action == null || report == null) return ResponseEntity.badRequest().build();
+
+        shopProcesser(report.getShop(), action);
+        report.setAction("PROCESSED");
+        reportService.save(report);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/report/product/{id}")
+    public ResponseEntity<String> reportProcessProduct(
+            @PathVariable("id") Integer reportId,
+            @RequestParam("action") Optional<String> act
+    ) {
+        String action = act.orElse(null);
+        Report report = reportService.getById(reportId);
+        if (action == null || report == null) return ResponseEntity.badRequest().build();
+
+        Product product = report.getProduct();
+        Shop shop = product.getShop();
+        int nOw = shop.getNumberOfWarning();
+
+        Notification notification = Notification.builder()
+                .imageUrl(product.getImages().get(0).getUrl())
+                .shop(shop)
+                .createdAt(new Date())
+                .read(false)
+                .build();
+
+        String notiTitle = "";
+        String notiContent = "";
+
+        if (action.equals("BAN")) {
+            notiTitle = "Product has been banned.";
+            notiContent = String.format("Product %s has been banned by Admin. " +
+                    "The product will no longer be displayed on the system until the optimal solution is found. ", product.getName());
+
+            product.setBan(true);
+            shopProcesser(shop, "WARNING");
+            shop.setBan(true);
+        } else if (action.equals("WARNING")) {
+            notiTitle = "Reported product warning.";
+            notiContent = String.format("Product %s has been reported and admin has sent a warning to your shop. " +
+                    "Shop please solve it quickly if you don't want to be banned. ", product.getName());
+            shopProcesser(shop, "WARNING");
+        }
+
+        notification.setTitle(notiTitle);
+        notification.setContent(notiContent);
+        notificationService.save(notification);
+
+        report.setAction("PROCESSED");
+        reportService.save(report);
+
+        shopService.save(shop);
+        productService.save(product);
+        return ResponseEntity.ok().build();
+    }
+
 
     @GetMapping("/wallet/")
     public ResponseEntity<Double> getWallet() {

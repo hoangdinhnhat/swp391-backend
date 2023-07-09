@@ -2,6 +2,7 @@ package com.swp391.backend.model.report;
 
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.swp391.backend.model.product.Product;
+import com.swp391.backend.model.product.ProductDTO;
 import com.swp391.backend.model.shop.Shop;
 import com.swp391.backend.model.user.User;
 import jakarta.persistence.*;
@@ -37,4 +38,25 @@ public class Report {
     private String reasonType;
     private String reasonSpecific;
     private String action;
+
+    public ReportDTO toDto()
+    {
+        ProductDTO productDTO = ProductDTO.builder()
+                .id(product.getId())
+                .name(product.getName())
+                .images(product.getImages())
+                .shop(product.getShop().toDto())
+                .build();
+
+        ReportDTO reportDTO = ReportDTO
+                .builder()
+                .id(id)
+                .reporter(reporter.toDto())
+                .product(productDTO)
+                .reasonType(reasonType)
+                .reasonSpecific(reasonSpecific)
+                .build();
+
+        return reportDTO;
+    }
 }

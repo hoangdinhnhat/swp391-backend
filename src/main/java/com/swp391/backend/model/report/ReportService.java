@@ -18,6 +18,11 @@ public class ReportService {
         reportRepository.deleteById(id);
     }
 
+    public Report getById(Integer id)
+    {
+        return reportRepository.findById(id).orElse(null);
+    }
+
     public List<Report> getProductReport() {
         return reportRepository.findByProductIsNotNullAndAction("UNPROCESS");
     }
