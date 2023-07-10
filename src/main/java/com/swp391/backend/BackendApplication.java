@@ -39,6 +39,13 @@ public class BackendApplication {
     }
 
     @Bean
+    CommandLineRunner init12(CounterService counterService) {
+        return (args) -> {
+            counterService.init();
+        };
+    }
+
+    @Bean
     CommandLineRunner init11(SettingService settingService) {
         return (args) -> {
             settingService.init();
@@ -126,13 +133,6 @@ public class BackendApplication {
     CommandLineRunner init10(ChatService chatService) {
         return (args) -> {
             chatService.init();
-        };
-    }
-
-    @Bean
-    CommandLineRunner init12(CounterService counterService) {
-        return (args) -> {
-            counterService.init();
         };
     }
 }

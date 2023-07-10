@@ -144,6 +144,13 @@ public class ProductService {
         return page;
     }
 
+    public int getMaxPageOwnShop(Shop shop) {
+        List<Product> list = productRepository.findByShop(shop);
+        int length = list.size();
+        int page = Math.floorDiv(length, 5) + 1;
+        return page;
+    }
+
     public int getMaxPage(String search) {
         List<Product> list = productRepository.findByNameContainingIgnoreCaseAndBan(search, false);
         int length = list.size();

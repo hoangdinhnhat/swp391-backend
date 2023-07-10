@@ -284,6 +284,13 @@ public class ShopController {
         return ResponseEntity.ok().build();
     }
 
+    @GetMapping("/products/max-page")
+    public ResponseEntity<Integer> getProductMaxPage() {
+        Shop shop = getShop();
+        int maxPage = productService.getMaxPageOwnShop(shop);
+        return ResponseEntity.ok().body(maxPage);
+    }
+
     @GetMapping("/products")
     public List<Product> getProducts(
             @RequestParam("page") Optional<Integer> pageId,
@@ -868,13 +875,25 @@ public class ShopController {
         return ResponseEntity.ok().build();
     }
 
-    @GetMapping("/notifications")
-    public ResponseEntity<List<Notification>> getNotification() {
+    @GetMapping("/notifications/max-page")
+    public ResponseEntity<Integer> getMaxPage() {
         Shop shop = getShop();
         if (shop == null) {
             return ResponseEntity.badRequest().build();
         }
-        return ResponseEntity.ok().body(shop.getNotifications());
+        Integer maxPage = notificationService.getMaxPage(shop);
+        return ResponseEntity.ok().body(maxPage);
+    }
+
+    @GetMapping("/notifications")
+    public ResponseEntity<List<Notification>> getNotification(@RequestParam("page") Optional<Integer> pg) {
+        Integer page = pg.orElse(1) - 1;
+        Shop shop = getShop();
+        if (shop == null) {
+            return ResponseEntity.badRequest().build();
+        }
+        List<Notification> notifications = notificationService.getNotificationByShop(shop, page);
+        return ResponseEntity.ok().body(notifications);
     }
 
     @PostMapping("/notification/read/{id}")

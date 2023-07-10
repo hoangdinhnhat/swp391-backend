@@ -716,7 +716,6 @@ public class UserDetailController {
         var orderDetails = orderDetailsService.getByOrderAndProduct(order, product);
 
         var feedbackRequest = Feedback.builder()
-                .rate(request.getRate())
                 .type("REPORT - " + request.getReason())
                 .time(request.getTime())
                 .description(request.getDescription())

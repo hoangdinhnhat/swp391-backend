@@ -3,6 +3,8 @@ package com.swp391.backend.model.notification;
 import com.swp391.backend.model.shop.Shop;
 import com.swp391.backend.model.user.User;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
@@ -38,5 +40,28 @@ public class NotificationService {
     public List<Notification> getNotificationByShop(Shop shop) {
         Sort sort = Sort.by("createdAt").descending();
         return notificationRepository.findByShop(shop, sort);
+    }
+
+    public List<Notification> getNotificationByShop(Shop shop, Integer page) {
+        Pageable pageable = PageRequest.of(page, 5, Sort.by("createdAt").descending());
+        return notificationRepository.findByShop(shop, pageable);
+    }
+
+    public int ceil(float num)
+    {
+        int rounded = Math.round(num);
+        if (rounded < num)
+        {
+            rounded += 1;
+        }
+        return rounded;
+    }
+
+    public Integer getMaxPage(Shop shop)
+    {
+        Sort sort = Sort.by("createdAt").descending();
+        var notifies =  notificationRepository.findByShop(shop, sort);
+        float div = notifies.size() * 1.0f / 5;
+        return ceil(div);
     }
 }

@@ -2,6 +2,7 @@ package com.swp391.backend.model.notification;
 
 import com.swp391.backend.model.shop.Shop;
 import com.swp391.backend.model.user.User;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -13,4 +14,6 @@ public interface NotificationRepository extends JpaRepository<Notification, Inte
     List<Notification> findByUser(User user, Sort sort);
 
     List<Notification> findByShop(Shop shop, Sort sort);
+
+    List<Notification> findByShop(Shop shop, Pageable pageable);
 }

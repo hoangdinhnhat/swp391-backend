@@ -89,7 +89,8 @@ public class Product {
     public double getRating() {
         double rating = 0;
         double size = 0;
-        for (var fb : feedbacks) {
+        var filteredFeedback = feedbacks.stream().filter(f -> !f.getType().startsWith("REPORT")).toList();
+        for (var fb : filteredFeedback) {
             rating += fb.getRate();
             size += 1;
         }
