@@ -118,5 +118,19 @@ public class UserService implements UserDetailsService {
                 .joinAt(new Date())
                 .build();
         save(user3);
+
+        var user4 = User.builder()
+                .firstname("Musk")
+                .lastname("Elon")
+                .email("elon@musk.com")
+                .gender(Gender.MALE)
+                .enabled(true)
+                .locked(false)
+                .imageurl("/api/v1/publics/user/avatar/elon@musk.com")
+                .password(new BCryptPasswordEncoder().encode("1234"))
+                .role(Role.ADMIN)
+                .joinAt(new Date())
+                .build();
+        save(user4);
     }
 }

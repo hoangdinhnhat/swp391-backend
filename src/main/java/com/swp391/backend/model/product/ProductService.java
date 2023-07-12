@@ -137,32 +137,42 @@ public class ProductService {
         return productRepository.findByShopAndBan(shop, true, pageable);
     }
 
+    public int ceil(float num)
+    {
+        int rounded = Math.round(num);
+        if (rounded < num)
+        {
+            rounded += 1;
+        }
+        return rounded;
+    }
+
     public int getMaxPage(Shop shop) {
         List<Product> list = productRepository.findByShop(shop);
         int length = list.size();
-        int page = Math.floorDiv(length, 40) + 1;
-        return page;
+        float div = length * 1.0f / 40;
+        return ceil(div);
     }
 
     public int getMaxPageOwnShop(Shop shop) {
         List<Product> list = productRepository.findByShop(shop);
         int length = list.size();
-        int page = Math.floorDiv(length, 5) + 1;
-        return page;
+        float div = length * 1.0f / 40;
+        return ceil(div);
     }
 
     public int getMaxPage(String search) {
         List<Product> list = productRepository.findByNameContainingIgnoreCaseAndBan(search, false);
         int length = list.size();
-        int page = Math.floorDiv(length, 40) + 1;
-        return page;
+        float div = length * 1.0f / 40;
+        return ceil(div);
     }
 
     public int getMaxPage(Category category) {
         List<Product> list = productRepository.findByCategory(category);
         int length = list.size();
-        int page = Math.floorDiv(length, 40) + 1;
-        return page;
+        float div = length * 1.0f / 40;
+        return ceil(div);
     }
 
     public Product getProductById(Integer id) {

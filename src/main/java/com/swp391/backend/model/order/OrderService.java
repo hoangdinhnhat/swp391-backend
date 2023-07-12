@@ -316,6 +316,30 @@ public class OrderService {
         return rs;
     }
 
+    public int ceil(float num)
+    {
+        int rounded = Math.round(num);
+        if (rounded < num)
+        {
+            rounded += 1;
+        }
+        return rounded;
+    }
+
+    public Integer getMaxPage(Shop shop, String kw)
+    {
+        var orders = orderRepository.findByShopAndIdContainingIgnoreCase(shop, kw);
+        float div = orders.size() * 1.0f / 6;
+        return ceil(div);
+    }
+
+    public Integer getMaxPage(Shop shop, OrderStatus status, String kw)
+    {
+        var orders = orderRepository.findByShopAndStatusAndIdContainingIgnoreCase(shop, status, kw);
+        float div = orders.size() * 1.0f / 6;
+        return ceil(div);
+    }
+
     public List<Order> getByShopAndId(Shop shop, String kw, Integer page) {
         Pageable pageable = PageRequest.of(page, 6, Sort.by("createdTime").descending());
         return orderRepository.findByShopAndIdContainingIgnoreCase(shop, kw, pageable);
@@ -323,7 +347,7 @@ public class OrderService {
 
     public List<Order> getByShopAndStatusAndId(Shop shop, OrderStatus status, String kw, Integer page) {
         Pageable pageable = PageRequest.of(page, 6, Sort.by("createdTime").descending());
-        ;
+
         return orderRepository.findByShopAndStatusAndIdContainingIgnoreCase(shop, status, kw, pageable);
     }
 
@@ -360,7 +384,7 @@ public class OrderService {
                 .id(generateOrderId(localDateTime) + 1)
                 .user(user)
                 .status(OrderStatus.COMPLETED)
-                .payment("COD")
+                .payment("Cash On Delivery")
                 .description(p1.getDescription().substring(0, 150))
                 .shop(shop)
                 .createdTime(date)
@@ -396,7 +420,7 @@ public class OrderService {
                 .id(generateOrderId(LocalDateTime.now()) + 1)
                 .user(user)
                 .status(OrderStatus.COMPLETED)
-                .payment("COD")
+                .payment("Cash On Delivery")
                 .description(p1.getDescription().substring(0, 150))
                 .shop(shop)
                 .createdTime(new Date())

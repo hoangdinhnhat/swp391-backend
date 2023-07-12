@@ -92,5 +92,4 @@ public class GmailSender implements EmailSender {
             }
         }
     }
-
 }

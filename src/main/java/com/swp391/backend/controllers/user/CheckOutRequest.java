@@ -12,7 +12,7 @@ import java.util.List;
 public class CheckOutRequest {
     private Integer shopId;
     private List<CheckOutItem> checkOutItems;
-    private Integer shippingFee;
+    private Double shippingFee;
     private Integer receiveInfo;
     private String payment;
 }

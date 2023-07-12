@@ -73,6 +73,7 @@ public class AuthenticationService {
             if (jwtService.isTokenValid(authToken.getValue(), user)) {
                 return AuthenticationResponse.builder()
                         .token(authToken.getValue())
+                        .role(user.getRole().name())
                         .build();
             } else {
                 tokenService.delete(authToken);
@@ -97,6 +98,7 @@ public class AuthenticationService {
         tokenService.save(authToken);
         return AuthenticationResponse.builder()
                 .token(jwtToken)
+                .role(user.getRole().name())
                 .build();
     }
 

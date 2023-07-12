@@ -541,9 +541,11 @@ public class UserDetailController {
 
         Shop shop = shopService.getShopById(product.getShop().getId());
         Integer quantity = quan.orElse(1);
+        int numberOfOrder = orderService.getNumberOfOrderInCurrentDay();
+        String oId = generateOrderId() + (numberOfOrder + 1);
 
         Order order = Order.builder()
-                .id(generateOrderId())
+                .id(oId)
                 .user(user)
                 .status(OrderStatus.SPECIAL_SHOP)
                 .payment("COD")
@@ -595,10 +597,19 @@ public class UserDetailController {
         return ResponseEntity.ok().build();
     }
 
-    @GetMapping("/notifications")
-    public List<Notification> getNotification() {
+    @GetMapping("/notifications/max-page")
+    public ResponseEntity<Integer> getMaxPage() {
         User user = (User) authenticatedManager.getAuthenticatedUser();
-        return user.getNotifications();
+        Integer maxPage = notificationService.getMaxPage(user);
+        return ResponseEntity.ok().body(maxPage);
+    }
+
+    @GetMapping("/notifications")
+    public ResponseEntity<List<Notification>> getNotification(@RequestParam("page") Optional<Integer> pg) {
+        Integer page = pg.orElse(1) - 1;
+        User user = (User) authenticatedManager.getAuthenticatedUser();
+        List<Notification> notifications = notificationService.getNotificationByUser(user, page);
+        return ResponseEntity.ok().body(notifications);
     }
 
     @PostMapping("/notification/read/{id}")

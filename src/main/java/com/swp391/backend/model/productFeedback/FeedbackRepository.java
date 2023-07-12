@@ -11,6 +11,23 @@ import java.util.List;
 
 public interface FeedbackRepository extends PagingAndSortingRepository<Feedback, Integer>, JpaRepository<Feedback, Integer> {
     List<Feedback> findByProduct(Product product, Pageable pageable);
+    @Query(
+            "SELECT F " +
+                    "FROM Feedback F " +
+                    "INNER JOIN Product P " +
+                    "ON F.product = P " +
+                    "WHERE P.shop = ?1"
+    )
+    List<Feedback> findByShop(Shop shop);
+    @Query(
+            "SELECT F " +
+                    "FROM Feedback F " +
+                    "INNER JOIN Product P " +
+                    "ON F.product = P " +
+                    "WHERE P.shop = ?1 " +
+                    "AND F.rate = ?2"
+    )
+    List<Feedback> findByShopAndRate(Shop shop, Integer rate);
 
     List<Feedback> findByProductAndRate(Product product, Integer rate, Pageable pageable);
 

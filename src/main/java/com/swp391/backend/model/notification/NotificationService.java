@@ -36,6 +36,10 @@ public class NotificationService {
         Sort sort = Sort.by("createdAt").descending();
         return notificationRepository.findByUser(user, sort);
     }
+    public List<Notification> getNotificationByUser(User user, Integer page) {
+        Pageable pageable = PageRequest.of(page, 5, Sort.by("createdAt").descending());
+        return notificationRepository.findByUser(user, pageable);
+    }
 
     public List<Notification> getNotificationByShop(Shop shop) {
         Sort sort = Sort.by("createdAt").descending();
@@ -61,6 +65,14 @@ public class NotificationService {
     {
         Sort sort = Sort.by("createdAt").descending();
         var notifies =  notificationRepository.findByShop(shop, sort);
+        float div = notifies.size() * 1.0f / 5;
+        return ceil(div);
+    }
+
+    public Integer getMaxPage(User user)
+    {
+        Sort sort = Sort.by("createdAt").descending();
+        var notifies =  notificationRepository.findByUser(user, sort);
         float div = notifies.size() * 1.0f / 5;
         return ceil(div);
     }

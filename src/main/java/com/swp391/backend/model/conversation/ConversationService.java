@@ -1,7 +1,15 @@
 package com.swp391.backend.model.conversation;
 
+import com.swp391.backend.model.ConversationChatter.ConversationChatter;
+import com.swp391.backend.model.shop.Shop;
+import com.swp391.backend.model.user.User;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor

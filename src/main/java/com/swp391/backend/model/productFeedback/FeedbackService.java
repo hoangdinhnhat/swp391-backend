@@ -56,6 +56,26 @@ public class FeedbackService {
         return feedbackRepository.findByProductAndRate(product, rate, pageable);
     }
 
+    public int ceil(float num)
+    {
+        int rounded = Math.round(num);
+        if (rounded < num)
+        {
+            rounded += 1;
+        }
+        return rounded;
+    }
+
+    public Integer getMaxFeedback(Shop shop, Integer rate) {
+        var feedbacks =  feedbackRepository.findByShopAndRate(shop, rate);
+        return feedbacks.size();
+    }
+
+    public Integer getMaxFeedback(Shop shop) {
+        var feedbacks =  feedbackRepository.findByShop(shop);
+        return feedbacks.size();
+    }
+
     public List<Feedback> getByShop(Shop shop, Integer page) {
         Pageable pageable = PageRequest.of(page, 3, Sort.by("time").descending());
         return feedbackRepository.findByShop(shop, pageable);

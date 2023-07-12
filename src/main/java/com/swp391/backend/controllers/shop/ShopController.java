@@ -470,6 +470,28 @@ public class ShopController {
         return ResponseEntity.ok().build();
     }
 
+    @GetMapping("/orders/max-page")
+    public ResponseEntity<Integer> getOrderMaxPage(
+            @RequestParam("keyword") Optional<String> kw,
+            @RequestParam("filter") Optional<OrderStatus> ft
+    ) {
+        Shop shop = getShop();
+        if (shop == null) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        String keyword = kw.orElse("");
+        OrderStatus filter = ft.orElse(null);
+        Integer maxPage = orderService.getMaxPage(shop, keyword);
+
+        if (filter != null)
+        {
+            maxPage = orderService.getMaxPage(shop, filter, keyword);
+        }
+
+        return ResponseEntity.ok().body(maxPage);
+    }
+
     @GetMapping("/orders/search")
     public ResponseEntity<List<OrderDTO>> searchOrder(
             @RequestParam("keyword") Optional<String> kw,
@@ -922,6 +944,23 @@ public class ShopController {
                 .toList();
         notificationService.saveAllAndFlush(notifications);
         return ResponseEntity.ok().build();
+    }
+
+    @GetMapping("/feedbacks/max-feedback")
+    public ResponseEntity<Integer> getMaxFeedback(
+            @RequestParam("rate") Optional<Integer> rt
+    ) {
+        Integer rate = rt.orElse(null);
+        Shop shop = getShop();
+        if (shop == null) {
+            return ResponseEntity.badRequest().build();
+        }
+        Integer maxPage = feedbackService.getMaxFeedback(shop);
+        if (rate != null) {
+            maxPage = feedbackService.getMaxFeedback(shop, rate);
+        }
+
+        return ResponseEntity.ok().body(maxPage);
     }
 
     @GetMapping("/feedbacks")

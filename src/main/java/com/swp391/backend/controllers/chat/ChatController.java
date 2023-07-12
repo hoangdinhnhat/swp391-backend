@@ -211,6 +211,7 @@ public class ChatController {
             message = Message.builder()
                     .senderImage(shop.getShopImage())
                     .senderType("SHOP")
+                    .type(MessageType.TEXT)
                     .senderId(shop.getId())
                     .sendTime(new Date())
                     .build();

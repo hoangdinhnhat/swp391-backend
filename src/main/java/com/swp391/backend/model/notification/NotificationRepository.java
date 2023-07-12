@@ -12,6 +12,7 @@ public interface NotificationRepository extends JpaRepository<Notification, Inte
     List<Notification> findByUserAndRead(User user, boolean read);
 
     List<Notification> findByUser(User user, Sort sort);
+    List<Notification> findByUser(User user, Pageable pageable);
 
     List<Notification> findByShop(Shop shop, Sort sort);
 
