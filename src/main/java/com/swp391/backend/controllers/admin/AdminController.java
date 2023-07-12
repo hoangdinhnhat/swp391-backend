@@ -47,7 +47,28 @@ public class AdminController {
     private final NotificationService notificationService;
     private final ReportService reportService;
 
-    
+    @GetMapping("/analyst/total")
+    public ResponseEntity<List<Integer>> getTotalOrders() {
+        String totalVisits = Math.round(counterService.getById("VISIT_PAGE").getValue()) + "";
+        Integer totalVi = Integer.parseInt(totalVisits);
+        Integer totalOrders = orderService.getTotalOrder();
+        Integer totalProducts = productService.getTotalProduct();
+        Integer totalNewlyUsers = userService.getNewUserInMonth();
+
+        List<Integer> results = new ArrayList<>();
+        results.add(totalOrders);
+        results.add(totalProducts);
+        results.add(totalVi);
+        results.add(totalNewlyUsers);
+
+        return ResponseEntity.ok().body(results);
+    }
+
+    @GetMapping("/analyst/category/product")
+    public ResponseEntity<List<Integer>> getProductInCategory() {
+        List<Integer> categoryQuantity = categoryService.getNumberOfCategoryAnalyst();
+        return ResponseEntity.ok().body(categoryQuantity);
+    }
 
     @GetMapping("/analyst/category/revenue")
     public ResponseEntity<List<List<Integer>>> getRevenueOfCategory() {
