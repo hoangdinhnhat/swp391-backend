@@ -298,8 +298,8 @@ public class AuthenticationService {
                 .build();
     }
 
-    public ResetResponse resetSend(UserDTO userDTO) throws Exception {
-        User user = (User) userService.loadUserByUsername(userDTO.getEmail());
+    public ResetResponse resetSend(String email) throws Exception {
+        User user = (User) userService.loadUserByUsername(email);
         Token checkToken = tokenService.findByUserAndType(user, "reset");
         if (checkToken != null) {
             tokenService.delete(checkToken);
@@ -323,9 +323,9 @@ public class AuthenticationService {
                 .build();
     }
 
-    public ResetResponse resetConfirm(UserDTO userDTO, String code) {
+    public ResetResponse resetConfirm(String email, String code) {
         String status = "Confirm Succesfully";
-        User user = (User) userService.loadUserByUsername(userDTO.getEmail());
+        User user = (User) userService.loadUserByUsername(email);
         Token resetToken = tokenService.findByUserAndType(user, "reset");
         if (!tokenService.isValid(resetToken)) {
             status = "Confirm code is expired!";
@@ -342,9 +342,9 @@ public class AuthenticationService {
                 .build();
     }
 
-    public ResetResponse resetNew(UserDTO userDTO, String newPass) {
+    public ResetResponse resetNew(String email, String newPass) {
         String status = "Reset Password Succesfully";
-        User user = (User) userService.loadUserByUsername(userDTO.getEmail());
+        User user = (User) userService.loadUserByUsername(email);
         String newPassword = passwordEncoder.encode(newPass);
         user.setPassword(newPassword);
         userService.save(user);

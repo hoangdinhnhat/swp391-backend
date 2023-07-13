@@ -94,17 +94,17 @@ public class AuthenticationController {
     }
 
     @PostMapping("/reset/send")
-    public ResponseEntity<ResetResponse> resetSend(@RequestBody UserDTO userDTO) throws Exception {
-        return ResponseEntity.ok().body(service.resetSend(userDTO));
+    public ResponseEntity<ResetResponse> resetSend(@RequestParam("email") String email) throws Exception {
+        return ResponseEntity.ok().body(service.resetSend(email));
     }
 
     @PostMapping("/reset/confirm")
-    public ResponseEntity<ResetResponse> resetConfirm(@RequestBody UserDTO userDTO, @RequestParam("code") String code) {
-        return ResponseEntity.ok().body(service.resetConfirm(userDTO, code));
+    public ResponseEntity<ResetResponse> resetConfirm(@RequestParam("email") String email, @RequestParam("code") String code) {
+        return ResponseEntity.ok().body(service.resetConfirm(email, code));
     }
 
     @PostMapping("/reset/new")
-    public ResponseEntity<ResetResponse> resetNew(@RequestBody UserDTO userDTO, @RequestParam("password") String password) {
-        return ResponseEntity.ok().body(service.resetNew(userDTO, password));
+    public ResponseEntity<ResetResponse> resetNew(@RequestParam("email") String email, @RequestParam("password") String password) {
+        return ResponseEntity.ok().body(service.resetNew(email, password));
     }
 }

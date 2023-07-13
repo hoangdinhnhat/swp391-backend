@@ -459,12 +459,12 @@ public class UserDetailController {
         return new ModelAndView("redirect:http://localhost:3000/purchase/shipping");
     }
 
-    public int convertUsdToVnd(int usd) {
-        return usd * 23000;
+    public int convertUsdToVnd(float usd) {
+        return Math.round(usd * 23000);
     }
 
     @PostMapping("/payment/open")
-    public ResponseEntity<String> openGateway(@RequestParam("total") Integer total, @RequestBody List<CheckOutRequest> checkOutRequests) throws Exception {
+    public ResponseEntity<String> openGateway(@RequestParam("total") float total, @RequestBody List<CheckOutRequest> checkOutRequests) throws Exception {
         temporaryStorage.saveTemporaryObject(checkOutRequests);
         String gatewayUrl = zaloPayService.createGatewayUrl(convertUsdToVnd(total), "users/payment/finish");
         return ResponseEntity.ok().body(gatewayUrl);
@@ -533,7 +533,7 @@ public class UserDetailController {
                     .title("Your shop just received a new order!")
                     .content(String.format("Customer %s has just placed an order in your shop. Please check and feedback!", user.getFirstname()))
                     .imageUrl(product.getImages().get(0).getUrl())
-                    .redirectUrl("/seller/portal/feedback")
+                    .redirectUrl("/seller/portal/order/all")
                     .shop(product.getShop())
                     .createdAt(new Date())
                     .read(false)

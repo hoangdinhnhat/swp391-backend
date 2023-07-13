@@ -261,7 +261,7 @@ public class ProductService {
                 "   ⚠\uFE0F NOTE: When opening the product, please return to the video of the product opening process to be 100% guaranteed to exchange for a new product if the VENDER T-shirt delivered is faulty.";
 
         for (int i = 1; i < 20; i++) {
-            double price = Math.round(Math.random() * 999 + 1000);
+            double price = Math.round(Math.random() * 99 + 100);
             var product1 = Product.builder()
                     .name("African crested bird")
                     .categoryGroup(categoryGroupService.getCategoryGroupById(1))
@@ -365,7 +365,7 @@ public class ProductService {
             feedbackReplyService.save(feedbackRep2);
         }
         for (int i = 20; i < 40; i++) {
-            double price = Math.round(Math.random() * 999 + 1000);
+            double price = Math.round(Math.random() * 99 + 100);
             var product1 = Product.builder()
                     .name("African bird's food")
                     .categoryGroup(categoryGroupService.getCategoryGroupById(3))
@@ -432,7 +432,7 @@ public class ProductService {
             productFeedbackImageService.save(pfi2);
         }
         for (int i = 40; i < 60; i++) {
-            double price = Math.round(Math.random() * 999 + 1000);
+            double price = Math.round(Math.random() * 99 + 100);
             var product1 = Product.builder()
                     .name("African bird's cage")
                     .categoryGroup(categoryGroupService.getCategoryGroupById(4))
@@ -498,7 +498,7 @@ public class ProductService {
             productFeedbackImageService.save(pfi2);
         }
         for (int i = 60; i < 80; i++) {
-            double price = Math.round(Math.random() * 999 + 1000);
+            double price = Math.round(Math.random() * 99 + 100);
             var product1 = Product.builder()
                     .name("African bird's accessories")
                     .categoryGroup(categoryGroupService.getCategoryGroupById(4))
