@@ -883,16 +883,34 @@ public class ShopController {
         }
 
         Integer shippingFee = sF.orElse(0);
+        Product product = order.getOrderDetails().get(0).getProduct();
+        User user = order.getUser();
+
+        Notification notification = Notification.builder()
+                .imageUrl(user.getImageurl())
+                .user(user)
+                .createdAt(new Date())
+                .read(false)
+                .build();
 
         if (action.equals("CONFIRM")) {
+            notification.setTitle("Your application has been approved!");
+            notification.setContent(String.format("Shop %s has confirmed your bird purchase and has set a shipping fee. Please reconfirm your order!", shop.getName()));
+            notification.setRedirectUrl("/purchase/contact");
             order.setShippingFee(shippingFee);
             order.setStatus(OrderStatus.SPECIAL_USER);
         }
 
         if (action.equals("REJECT")) {
+            notification.setTitle("Your application has been rejected by the shop!");
+            notification.setContent(String.format("Shop %s rejected your bird application for various reasons!", shop.getName()));
+            notification.setRedirectUrl("/purchase/cancel");
+            product.setAvailable(product.getAvailable() + 1);
             order.setStatus(OrderStatus.CANCELLED);
         }
 
+        productService.save(product);
+        notificationService.save(notification);
         orderService.save(order);
         return ResponseEntity.ok().build();
     }
@@ -986,6 +1004,20 @@ public class ShopController {
         return ResponseEntity.ok().body(feedbackDtos);
     }
 
+    @PostMapping("/feedbacks/accept/{id}")
+    public ResponseEntity<String> shopAcceptRefund(@PathVariable("id") Integer fId)
+    {
+        Shop shop = getShop();
+        if (shop == null) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        Feedback feedback = feedbackService.getById(fId);
+        feedback.setProcessed(true);
+        feedbackService.save(feedback);
+        return ResponseEntity.ok().build();
+    }
+
     @PostMapping("/feedbacks/response/")
     public ResponseEntity<String> shopResponseFeedback(@RequestBody ShopResponseRequest request) {
         Shop shop = getShop();
@@ -994,6 +1026,7 @@ public class ShopController {
         }
 
         Feedback feedback = feedbackService.getById(request.getFeedbackId());
+        feedback.setProcessed(true);
 
         var feedbackRep = FeedbackReply.builder()
                 .feedback(feedback)
@@ -1012,7 +1045,7 @@ public class ShopController {
                 .read(false)
                 .build();
         notificationService.save(notification);
-
+        feedbackService.save(feedback);
         return ResponseEntity.ok().build();
     }
 }

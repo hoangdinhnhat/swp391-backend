@@ -49,6 +49,7 @@ public class Feedback {
 
     private String type;
     private String reason;
+    private boolean processed;
 
     public FeedbackDTO toDto() {
         return FeedbackDTO.builder()
@@ -65,6 +66,7 @@ public class Feedback {
                 .videoUrl(videoUrl)
                 .images(images)
                 .feedbackReplies(feedbackReplies)
+                .processed(processed)
                 .type(type)
                 .build();
     }

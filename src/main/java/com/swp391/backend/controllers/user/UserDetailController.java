@@ -239,6 +239,12 @@ public class UserDetailController {
         return ResponseEntity.ok().body(receiveInfoService.saveReceiveInfo(receiveInfo));
     }
 
+    @GetMapping("/info/receives/all")
+    public ResponseEntity<List<ReceiveInfo>> getReceiveInfo() {
+        User user = (User) authenticatedManager.getAuthenticatedUser();
+        return ResponseEntity.ok().body(receiveInfoService.getReceiveInfo(user));
+    }
+
     @GetMapping("/info/receives")
     public ResponseEntity<List<ReceiveInfo>> getReceiveInfo(@RequestParam("page") Integer pageNum) {
         pageNum--;
@@ -522,6 +528,17 @@ public class UserDetailController {
                 shop.setWallet(order.getSellPrice() + order.getShippingFee());
                 shopService.save(shop);
             }
+
+            Notification notification = Notification.builder()
+                    .title("Your shop just received a new order!")
+                    .content(String.format("Customer %s has just placed an order in your shop. Please check and feedback!", user.getFirstname()))
+                    .imageUrl(product.getImages().get(0).getUrl())
+                    .redirectUrl("/seller/portal/feedback")
+                    .shop(product.getShop())
+                    .createdAt(new Date())
+                    .read(false)
+                    .build();
+            notificationService.save(notification);
         });
     }
 
@@ -535,7 +552,8 @@ public class UserDetailController {
     public ResponseEntity<String> createSpecialOrder(@RequestParam("id") Integer productId, @RequestParam("quantity") Optional<Integer> quan) {
         User user = (User) authenticatedManager.getAuthenticatedUser();
         Product product = productService.getProductById(productId);
-        if (product.getCategoryGroup().getCategory().getId() != 1) {
+        ReceiveInfo receiveInfo = receiveInfoService.getDefaultReceiveInfo(user);
+        if (product.getCategoryGroup().getCategory().getId() != 1 || receiveInfo == null) {
             return ResponseEntity.badRequest().build();
         }
 
@@ -548,6 +566,7 @@ public class UserDetailController {
                 .id(oId)
                 .user(user)
                 .status(OrderStatus.SPECIAL_SHOP)
+                .receiveInfo(receiveInfo)
                 .payment("COD")
                 .description(product.getDescription().substring(0, 150))
                 .shop(shop)
@@ -571,6 +590,17 @@ public class UserDetailController {
         product.setAvailable(product.getAvailable() - 1);
         productService.save(product);
 
+        Notification notification = Notification.builder()
+                .title("Your shop has just received a special order")
+                .content(String.format("Customer %s just sent a request to buy birds. Please respond quickly.", user.getFirstname()))
+                .imageUrl(product.getImages().get(0).getUrl())
+                .redirectUrl("/seller/portal/order/contact")
+                .shop(shop)
+                .createdAt(new Date())
+                .read(false)
+                .build();
+        notificationService.save(notification);
+
         return ResponseEntity.ok().build();
     }
 
@@ -581,19 +611,43 @@ public class UserDetailController {
     ) {
 
         Order order = orderService.getById(orderId);
+        User user = (User) authenticatedManager.getAuthenticatedUser();
         if (order == null) {
             return ResponseEntity.badRequest().build();
         }
 
+        Product product = order.getOrderDetails().get(0).getProduct();
+        Shop shop = order.getShop();
+
+        Notification notification = Notification.builder()
+                .imageUrl(user.getImageurl())
+                .shop(shop)
+                .createdAt(new Date())
+                .read(false)
+                .build();
+
         if (action.equals("CONFIRM")) {
+            notification.setTitle("The customer has confirmed the bird purchase order!");
+            notification.setContent(String.format("Customer %s has once again confirmed the bird order. Hurry up to deliver to customers!", user.getFirstname()));
+            notification.setRedirectUrl("/seller/portal/order/shipping");
             order.setStatus(OrderStatus.SHIPPING);
         }
 
         if (action.equals("REJECT")) {
+            notification.setTitle("The customer has just refused a special order that your shop has set the shipping fee.");
+            notification.setContent(String.format("Customer %s has just rejected an order to buy birds because it doesn't accept the shipping fee.", user.getFirstname()));
+            notification.setRedirectUrl("/seller/portal/order/cancel");
+            product.setAvailable(product.getAvailable() + 1);
             order.setStatus(OrderStatus.CANCELLED);
         }
 
+        productService.save(product);
+
         orderService.save(order);
+
+        notificationService.save(notification);
+
+
         return ResponseEntity.ok().build();
     }
 
@@ -707,6 +761,16 @@ public class UserDetailController {
         }
 
         orderDetailsService.setFeedbacked(orderDetails);
+        Notification notification = Notification.builder()
+                .title("Your shop has just received new feedback!")
+                .content(String.format("Customer %s has just commented on the product of your shop. Please be quick to check and respond.", user.getFirstname()))
+                .imageUrl(product.getImages().get(0).getUrl())
+                .redirectUrl("/seller/portal/feedback")
+                .shop(product.getShop())
+                .createdAt(new Date())
+                .read(false)
+                .build();
+        notificationService.save(notification);
 
         return ResponseEntity.ok().build();
     }
@@ -756,6 +820,16 @@ public class UserDetailController {
         }
 
         orderDetailsService.setFeedbacked(orderDetails);
+        Notification notification = Notification.builder()
+                .title("Your shop has just received new report!")
+                .content(String.format("Customer %s has just commented on the product of your shop. Please be quick to check and respond.", user.getFirstname()))
+                .imageUrl(product.getImages().get(0).getUrl())
+                .redirectUrl("/seller/portal/feedback")
+                .shop(product.getShop())
+                .createdAt(new Date())
+                .read(false)
+                .build();
+        notificationService.save(notification);
 
         return ResponseEntity.ok().build();
     }

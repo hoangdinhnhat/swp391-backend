@@ -36,9 +36,9 @@ public interface FeedbackRepository extends PagingAndSortingRepository<Feedback,
                     "FROM Feedback F " +
                     "INNER JOIN Product P " +
                     "ON F.product = P " +
-                    "WHERE P.shop = ?1"
+                    "WHERE P.shop = ?1 AND F.processed = ?2"
     )
-    List<Feedback> findByShop(Shop shop, Pageable pageable);
+    List<Feedback> findByShopAndProcessed(Shop shop, Boolean processed, Pageable pageable);
 
     @Query(
             "SELECT F " +
@@ -46,9 +46,9 @@ public interface FeedbackRepository extends PagingAndSortingRepository<Feedback,
                     "INNER JOIN Product P " +
                     "ON F.product = P " +
                     "WHERE P.shop = ?1 " +
-                    "AND F.rate = ?2"
+                    "AND F.rate = ?2 AND F.processed = ?3"
     )
-    List<Feedback> findByShopAndRate(Shop shop, Integer rate, Pageable pageable);
+    List<Feedback> findByShopAndRateAndProcessed(Shop shop, Integer rate, Boolean processed, Pageable pageable);
 
     @Query(
             value = "SELECT COUNT(f.id) " +

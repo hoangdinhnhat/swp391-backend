@@ -78,12 +78,12 @@ public class FeedbackService {
 
     public List<Feedback> getByShop(Shop shop, Integer page) {
         Pageable pageable = PageRequest.of(page, 3, Sort.by("time").descending());
-        return feedbackRepository.findByShop(shop, pageable);
+        return feedbackRepository.findByShopAndProcessed(shop, false, pageable);
     }
 
     public List<Feedback> getByShopAndRate(Shop shop, Integer rate, Integer page) {
         Pageable pageable = PageRequest.of(page, 3, Sort.by("time").descending());
-        return feedbackRepository.findByShopAndRate(shop, rate, pageable);
+        return feedbackRepository.findByShopAndRateAndProcessed(shop, rate, false, pageable);
     }
 
     public List<Integer> getNumberOfFeedbackAnalystInDay(Shop shop) {

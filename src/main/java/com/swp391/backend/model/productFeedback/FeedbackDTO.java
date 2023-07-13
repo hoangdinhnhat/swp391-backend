@@ -27,4 +27,5 @@ public class FeedbackDTO {
     private List<ProductFeedbackImage> images;
     private List<FeedbackReply> feedbackReplies;
     private String type;
+    private boolean processed;
 }

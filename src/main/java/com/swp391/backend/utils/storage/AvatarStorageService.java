@@ -38,11 +38,11 @@ public class AvatarStorageService implements StorageService {
                             Paths.get(expectedName))
                     .normalize().toAbsolutePath();
             System.out.println(destinationFile);
-            if (!destinationFile.getParent().equals(this.rootLocation.toAbsolutePath())) {
-                // This is a security check
-                throw new StorageException(
-                        "Cannot store file outside current directory.");
-            }
+//            if (!destinationFile.getParent().equals(this.rootLocation.toAbsolutePath())) {
+//                // This is a security check
+//                throw new StorageException(
+//                        "Cannot store file outside current directory.");
+//            }
             try (InputStream inputStream = file.getInputStream()) {
                 Files.copy(inputStream, destinationFile,
                         StandardCopyOption.REPLACE_EXISTING);
