@@ -31,6 +31,7 @@ public class OrderDetails {
 
     private Integer quantity;
     private double sellPrice;
+    private double soldPrice;
     private boolean feedbacked;
 
     public OrderDetailsDTO toDto() {
@@ -38,6 +39,7 @@ public class OrderDetails {
                 .product(product)
                 .quantity(quantity)
                 .sellPrice(sellPrice)
+                .soldPrice(soldPrice)
                 .feedbacked(feedbacked)
                 .build();
     }

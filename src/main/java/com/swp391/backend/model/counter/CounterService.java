@@ -24,7 +24,7 @@ public class CounterService {
 
         Counter counter2 = Counter.builder()
                 .id("WALLET")
-                .value(100000.0)
+                .value(1000000.0)
                 .build();
 
         save(counter);

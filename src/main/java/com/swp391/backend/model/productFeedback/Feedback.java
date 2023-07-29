@@ -50,6 +50,7 @@ public class Feedback {
     private String type;
     private String reason;
     private boolean processed;
+    private String orderId;
 
     public FeedbackDTO toDto() {
         return FeedbackDTO.builder()
@@ -67,6 +68,7 @@ public class Feedback {
                 .images(images)
                 .feedbackReplies(feedbackReplies)
                 .processed(processed)
+                .orderId(orderId)
                 .type(type)
                 .build();
     }

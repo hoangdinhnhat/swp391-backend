@@ -48,6 +48,9 @@ public class Order {
     private String payment;
     private String description;
     private double sellPrice;
+    private double soldPrice;
+    private boolean special;
+    private String expectedReceive;
 
     @Enumerated(EnumType.STRING)
     private OrderStatus status;
@@ -67,8 +70,11 @@ public class Order {
                 .shippingFee(shippingFee)
                 .payment(payment)
                 .description(description)
+                .expectedReceive(expectedReceive)
                 .sellPrice(sellPrice)
+                .soldPrice(soldPrice)
                 .status(status.name())
+                .special(special)
                 .build();
     }
 }

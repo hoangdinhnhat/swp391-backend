@@ -10,6 +10,6 @@ package com.swp391.backend.model.user;
 public enum Role {
     ADMIN,
     CUSTOMER,
-    GUEST,
-    STAFF
+    STAFF,
+    SHIPPING_UNIT
 }

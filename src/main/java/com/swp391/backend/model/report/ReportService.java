@@ -1,5 +1,8 @@
 package com.swp391.backend.model.report;
 
+import com.swp391.backend.model.product.Product;
+import com.swp391.backend.model.shop.Shop;
+import com.swp391.backend.model.user.User;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -12,6 +15,16 @@ public class ReportService {
 
     public Report save(Report report) {
         return reportRepository.save(report);
+    }
+
+    public Report getByReporterAndShop(User reporter, Shop shop)
+    {
+        return reportRepository.findByReporterAndShop(reporter, shop);
+    }
+
+    public Report getByReporterAndProduct(User reporter, Product product)
+    {
+        return reportRepository.findByReporterAndProduct(reporter, product);
     }
 
     public void deleteById(Integer id) {

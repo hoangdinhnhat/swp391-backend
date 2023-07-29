@@ -8,10 +8,13 @@ import com.swp391.backend.model.order.OrderService;
 import com.swp391.backend.model.product.Product;
 import com.swp391.backend.model.product.ProductDTO;
 import com.swp391.backend.model.product.ProductService;
+import com.swp391.backend.model.productSale.ProductSaleService;
 import com.swp391.backend.model.receiveinfo.ReceiveInfoService;
 import com.swp391.backend.model.report.Report;
 import com.swp391.backend.model.report.ReportDTO;
 import com.swp391.backend.model.report.ReportService;
+import com.swp391.backend.model.saleEvent.SaleEvent;
+import com.swp391.backend.model.saleEvent.SaleEventService;
 import com.swp391.backend.model.settings.Setting;
 import com.swp391.backend.model.settings.SettingService;
 import com.swp391.backend.model.shop.Shop;
@@ -48,6 +51,8 @@ public class AdminController {
     private final CounterService counterService;
     private final NotificationService notificationService;
     private final ReportService reportService;
+    private final ProductSaleService productSaleService;
+    private final SaleEventService saleEventService;
 
     @GetMapping("/analyst/total")
     public ResponseEntity<List<Integer>> getTotalOrders() {
@@ -134,6 +139,16 @@ public class AdminController {
     @PostMapping("/management/setting/update")
     public ResponseEntity<List<Setting>> updateSettings(@RequestBody List<Setting> settings) {
         var savedSettings = settingService.saveAll(settings);
+        Setting setting = settingService.getById(5);
+        SaleEvent saleEvent = saleEventService.getSaleEventById(1);
+        if (setting.getValue() != 1)
+        {
+            var productSales =  productSaleService.getBySaleEvent(saleEvent);
+            productSaleService.deleteAll(productSales);
+        }else
+        {
+            saleEventService.initSale();
+        }
         return ResponseEntity.ok().body(savedSettings);
     }
 

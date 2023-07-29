@@ -9,6 +9,7 @@ import com.swp391.backend.model.categoryDetailInfo.CategoryDetailInfo;
 import com.swp391.backend.model.categoryDetailInfo.CategoryDetailInfoService;
 import com.swp391.backend.model.categoryGroup.CategoryGroup;
 import com.swp391.backend.model.categoryGroup.CategoryGroupService;
+import com.swp391.backend.model.counter.Counter;
 import com.swp391.backend.model.counter.CounterService;
 import com.swp391.backend.model.district.District;
 import com.swp391.backend.model.district.DistrictService;
@@ -18,6 +19,8 @@ import com.swp391.backend.model.order.Order;
 import com.swp391.backend.model.order.OrderDTO;
 import com.swp391.backend.model.order.OrderService;
 import com.swp391.backend.model.order.OrderStatus;
+import com.swp391.backend.model.orderDetails.OrderDetails;
+import com.swp391.backend.model.orderDetails.OrderDetailsId;
 import com.swp391.backend.model.orderDetails.OrderDetailsService;
 import com.swp391.backend.model.product.Product;
 import com.swp391.backend.model.product.ProductService;
@@ -30,6 +33,7 @@ import com.swp391.backend.model.productFeedbackReply.FeedbackReply;
 import com.swp391.backend.model.productFeedbackReply.FeedbackReplyService;
 import com.swp391.backend.model.productImage.ProductImage;
 import com.swp391.backend.model.productImage.ProductImageServie;
+import com.swp391.backend.model.productSale.ProductSale;
 import com.swp391.backend.model.province.Province;
 import com.swp391.backend.model.province.ProvinceService;
 import com.swp391.backend.model.shop.Shop;
@@ -42,6 +46,7 @@ import com.swp391.backend.model.shopPlan.ShopPlan;
 import com.swp391.backend.model.shopPlan.ShopPlanService;
 import com.swp391.backend.model.subscription.SubscriptionService;
 import com.swp391.backend.model.user.User;
+import com.swp391.backend.model.user.UserService;
 import com.swp391.backend.model.ward.Ward;
 import com.swp391.backend.model.ward.WardService;
 import com.swp391.backend.utils.storage.ProductImageStorageService;
@@ -49,6 +54,7 @@ import com.swp391.backend.utils.storage.StorageService;
 import com.swp391.backend.utils.zalopay_gateway.ZaloPayService;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.aspectj.weaver.ast.Or;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.ResponseEntity;
@@ -85,7 +91,9 @@ public class ShopController {
     private final ShopPackageService shopPackageService;
     private final ShopPlanService shopPlanService;
     private final CounterService counterService;
+    private final UserService userService;
     private final ZaloPayService zaloPayService = ZaloPayService.gI();
+
     @Autowired
     private Gson gsonUtils;
     @Autowired
@@ -401,10 +409,21 @@ public class ShopController {
         if (shop == null) {
             return ResponseEntity.badRequest().build();
         }
+
         boolean isValid = shopPackageService.checkShopPackage(shop);
         if (!isValid) return ResponseEntity.badRequest().build();
 
         var request = gsonUtils.fromJson(jsonRequest, ProductRequest.class);
+        if (request.getAvailable() <= 0 || request.getPrice() <= 0) {
+            return ResponseEntity.badRequest().build();
+        }
+//        int size = shop.getShopPackages().size();
+//        ShopPackage shopPackage = shop.getShopPackages().get(size - 1);
+//        ShopPlan shopPlan = shopPackage.getShopPlan();
+//        if (request.getPrice() > shopPlan.getPrice())
+//        {
+//            return ResponseEntity.badRequest().build();
+//        }
         CategoryGroup group = categoryGroupService.getCategoryGroupById(request.getCategoryGroup());
 
         var productRequest = Product.builder()
@@ -456,7 +475,7 @@ public class ShopController {
         shop.getSubscriptions().forEach(it -> {
             User userr = it.getUser();
             Notification notification = Notification.builder()
-                    .title(String.format("Shop %s vừa upload sản phẩm mới", shop.getName()))
+                    .title(String.format("Shop %s just upload a new product!", shop.getName()))
                     .content(product.getDescription().substring(0, 100))
                     .imageUrl("/api/v1/publics/product/image/" + product.getId() + "?imgId=1")
                     .redirectUrl("/product?productId=" + product.getId())
@@ -468,6 +487,92 @@ public class ShopController {
         });
 
         return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/products/edit")
+    public ResponseEntity<String> editProduct(
+            @RequestParam("product") String jsonRequest,
+            @RequestParam("productId") Integer productId,
+            @RequestParam("images") Optional<MultipartFile[]> imgs,
+            @RequestParam("video") Optional<MultipartFile> vd
+    ) {
+        Shop shop = getShop();
+        if (shop == null) {
+            return ResponseEntity.badRequest().build();
+        }
+        boolean isValid = shopPackageService.checkShopPackage(shop);
+        if (!isValid) return ResponseEntity.badRequest().build();
+
+        var request = gsonUtils.fromJson(jsonRequest, ProductRequest.class);
+        if (request.getAvailable() <= 0 || request.getPrice() <= 0) {
+            return ResponseEntity.badRequest().build();
+        }
+//        int size = shop.getShopPackages().size();
+//        ShopPackage shopPackage = shop.getShopPackages().get(size - 1);
+//        ShopPlan shopPlan = shopPackage.getShopPlan();
+//        if (request.getPrice() > shopPlan.getPrice())
+//        {
+//            return ResponseEntity.badRequest().build();
+//        }
+
+        Product findedProduct = productService.getProductById(productId);
+
+        findedProduct.setName(request.getName());
+        findedProduct.setDescription(request.getDescription());
+        findedProduct.setPrice(request.getPrice());
+        findedProduct.setAvailable(request.getAvailable());
+        var product = productService.save(findedProduct);
+
+        var video = vd.orElse(null);
+        if (video != null) {
+            productVideoStorageService.store(video, product.getId() + ".mp4");
+            product.setVideo("/api/v1/publics/product/video/" + product.getId());
+            productService.save(product);
+        }
+
+        var images = imgs.orElse(null);
+        if (images != null) {
+            int count = 0;
+            var services = (ProductImageStorageService) productImageStorageService;
+            for (MultipartFile image : images) {
+                count++;
+                services.store(image, product.getId().toString(), count + ".jpg");
+                var pI = ProductImage.builder()
+                        .product(product)
+                        .url("/api/v1/publics/product/image/" + product.getId() + "?imgId=" + count)
+                        .build();
+                productImageServie.save(pI);
+            }
+        }
+
+        shop.getSubscriptions().forEach(it -> {
+            User userr = it.getUser();
+            Notification notification = Notification.builder()
+                    .title(String.format("Shop %s just update the product's information", shop.getName()))
+                    .content(String.format("%s TO %s", findedProduct.getName(), product.getName()))
+                    .imageUrl("/api/v1/publics/product/image/" + product.getId() + "?imgId=1")
+                    .redirectUrl("/product?productId=" + product.getId())
+                    .user(userr)
+                    .createdAt(new Date())
+                    .read(false)
+                    .build();
+            notificationService.save(notification);
+        });
+
+        return ResponseEntity.ok().build();
+    }
+
+    @DeleteMapping("/products/delete")
+    public ResponseEntity<String> deleteProduct(@RequestParam("id") Optional<Integer> pId) {
+        Integer productId = pId.orElse(-1);
+        Product product = productService.getProductById(productId);
+        if (product == null) {
+            return ResponseEntity.badRequest().build();
+        }
+        product.setShop(null);
+        product.setBan(true);
+        productService.save(product);
+        return ResponseEntity.ok().body("Delete product successfully!");
     }
 
     @GetMapping("/orders/max-page")
@@ -484,8 +589,7 @@ public class ShopController {
         OrderStatus filter = ft.orElse(null);
         Integer maxPage = orderService.getMaxPage(shop, keyword);
 
-        if (filter != null)
-        {
+        if (filter != null) {
             maxPage = orderService.getMaxPage(shop, filter, keyword);
         }
 
@@ -852,7 +956,7 @@ public class ShopController {
         }
 
         Order order = orderService.getById(orderId);
-        order.setStatus(OrderStatus.COMPLETED);
+        order.setStatus(OrderStatus.SHIPPING);
         orderService.save(order);
         return ResponseEntity.ok().build();
     }
@@ -912,6 +1016,49 @@ public class ShopController {
         productService.save(product);
         notificationService.save(notification);
         orderService.save(order);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/order/special/delivery/{id}")
+    public ResponseEntity<String> processDeliverySpecialOrder(
+            @PathVariable("id") String orderId,
+            @RequestParam("action") String action
+    ) {
+
+        Order order = orderService.getById(orderId);
+        Shop shop = getShop();
+        if (order == null || shop == null) {
+            return ResponseEntity.badRequest().build();
+        }
+        User user = order.getUser();
+
+        Notification notificationUser = Notification.builder()
+                .imageUrl(shop.getShopImage())
+                .user(user)
+                .createdAt(new Date())
+                .read(false)
+                .build();
+
+
+        if (action.equals("CONFIRM")) {
+            notificationUser.setTitle("Delivery successful!");
+            notificationUser.setContent("Your order has been successfully delivered to you. Thanks for your support!");
+            notificationUser.setRedirectUrl("/purchase/complete");
+            order.setStatus(OrderStatus.COMPLETED);
+
+        }
+
+        if (action.equals("REJECT")) {
+            notificationUser.setTitle("Delivery failed!");
+            notificationUser.setContent("You have refused to accept the application. If there is any problem with the goods, we apologize!");
+            notificationUser.setRedirectUrl("/purchase/cancel");
+            order.setStatus(OrderStatus.CANCELLED);
+        }
+
+        orderService.save(order);
+
+        notificationService.save(notificationUser);
+
         return ResponseEntity.ok().build();
     }
 
@@ -1005,8 +1152,74 @@ public class ShopController {
     }
 
     @PostMapping("/feedbacks/accept/{id}")
-    public ResponseEntity<String> shopAcceptRefund(@PathVariable("id") Integer fId)
-    {
+    public ResponseEntity<String> shopAcceptRefund(@PathVariable("id") Integer fId) {
+        Shop shop = getShop();
+        if (shop == null) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        Feedback feedback = feedbackService.getById(fId);
+        feedback.setProcessed(true);
+        String expectedOrderId = feedback.getOrderId() + "_RF";
+        Order order = orderService.getById(feedback.getOrderId());
+        Order refundOrder = orderService.getById(expectedOrderId);
+
+        OrderDetailsId findId = new OrderDetailsId();
+        findId.setOrderId(order.getId());
+        findId.setProductId(feedback.getProduct().getId());
+        OrderDetails findOd =  orderDetailsService.getById(findId);
+        double priceRefund = 0;
+
+        if (refundOrder == null)
+        {
+            priceRefund += order.getShippingFee();
+            refundOrder = Order.builder()
+                    .id(expectedOrderId)
+                    .user(order.getUser())
+                    .receiveInfo(order.getReceiveInfo())
+                    .status(OrderStatus.REFUND)
+                    .payment(order.getPayment())
+                    .description("REFUND ORDER OF #" + order.getId())
+                    .shippingFee(order.getShippingFee())
+                    .shop(shop)
+                    .createdTime(new Date())
+                    .build();
+            orderService.save(refundOrder);
+        }
+
+        OrderDetailsId id = new OrderDetailsId();
+        id.setOrderId(refundOrder.getId());
+        id.setProductId(feedback.getProduct().getId());
+
+        OrderDetails orderDetails = OrderDetails.builder()
+                .product(feedback.getProduct())
+                .quantity(findOd.getQuantity())
+                .sellPrice(findOd.getSellPrice())
+                .soldPrice(findOd.getSoldPrice())
+                .order(refundOrder)
+                .id(id)
+                .build();
+
+        if (order.getPayment().equals("ZaloPay Wallet"))
+        {
+            User user = feedback.getUser();
+            user.setWallet(user.getWallet() + findOd.getSoldPrice() * findOd.getQuantity() + priceRefund);
+            shop.setWallet(shop.getWallet() - findOd.getSellPrice() * findOd.getQuantity());
+            double difference = findOd.getSellPrice() - findOd.getSoldPrice();
+            Counter counter = counterService.getById("WALLET");
+            counter.setValue(counter.getValue() + difference);
+            userService.save(user);
+            shopService.save(shop);
+            counterService.save(counter);
+        }
+
+        orderDetailsService.saveRefund(orderDetails);
+        feedbackService.save(feedback);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/feedbacks/reject/{id}")
+    public ResponseEntity<String> shopRejectRefund(@PathVariable("id") Integer fId) {
         Shop shop = getShop();
         if (shop == null) {
             return ResponseEntity.badRequest().build();

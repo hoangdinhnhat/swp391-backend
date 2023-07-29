@@ -51,6 +51,9 @@ import com.swp391.backend.model.user.UserDTO;
 import com.swp391.backend.model.user.UserService;
 import com.swp391.backend.model.ward.Ward;
 import com.swp391.backend.model.ward.WardService;
+import com.swp391.backend.utils.ghn.GHNService;
+import com.swp391.backend.utils.mail.EmailSender;
+import com.swp391.backend.utils.mail.OrderConfirmationTemplate;
 import com.swp391.backend.utils.storage.ProductFeedbackImageStorageService;
 import com.swp391.backend.utils.storage.StorageService;
 import com.swp391.backend.utils.zalopay_gateway.ZaloPayService;
@@ -99,6 +102,8 @@ public class UserDetailController {
     private final ProductFeedbackImageService productFeedbackImageService;
     private final TemporaryStorage temporaryStorage;
     private final ReportService reportService;
+    private final EmailSender gmailSender;
+    private final GHNService ghnService;
     private ZaloPayService zaloPayService = ZaloPayService.gI();
 
     @Autowired
@@ -146,6 +151,7 @@ public class UserDetailController {
                 .imageurl(user.getImageurl())
                 .gender(user.getGender())
                 .shopDTO(shop)
+                .wallet(user.getWallet())
                 .receiveInfoPage(page)
                 .defaultReceiveInfo(defaultInfo)
                 .cartProducts(cartProducts)
@@ -407,6 +413,11 @@ public class UserDetailController {
             quantity += findedCartProduct.getQuantity();
         }
 
+        if (quantity > product.getAvailable())
+        {
+            return ResponseEntity.badRequest().body("This product is out of stock");
+        }
+
         CartProductKey id = new CartProductKey();
         id.cartId = cart.getId();
         id.productId = product.getId();
@@ -455,7 +466,16 @@ public class UserDetailController {
             return null;
         }
         List<CheckOutRequest> checkOutRequests = (List<CheckOutRequest>) temporaryStorage.getTemporaryObject();
-        orderCreator(checkOutRequests, OrderStatus.SHIPPING);
+        List<Order> orders = new ArrayList<>();
+        orderCreator(checkOutRequests, OrderStatus.SHIPPING, orders);
+        User user = (User) authenticatedManager.getAuthenticatedUser();
+        orders = orders.stream().map(o -> {
+            List<OrderDetails> orderDetails = orderDetailsService.getByOrder(o);
+            o.setOrderDetails(orderDetails);
+            return o;
+        }).toList();
+        String template = OrderConfirmationTemplate.getTemplete(user.getFirstname(), orders);
+        gmailSender.send("Order Confirmation", template, user.getEmail());
         return new ModelAndView("redirect:http://localhost:3000/purchase/shipping");
     }
 
@@ -470,8 +490,13 @@ public class UserDetailController {
         return ResponseEntity.ok().body(gatewayUrl);
     }
 
+    public double roundedFloat(double num)
+    {
+        return (double) Math.round(num * 100) / 100;
+    }
+
     @Transactional
-    public void orderCreator(List<CheckOutRequest> checkOutRequests, OrderStatus orderStatus) {
+    public void orderCreator(List<CheckOutRequest> checkOutRequests, OrderStatus orderStatus, List<Order> orders) throws Exception {
         int numberOfOrder = orderService.getNumberOfOrderInCurrentDay();
         User user = (User) authenticatedManager.getAuthenticatedUser();
         Cart cart = user.getCart();
@@ -490,7 +515,7 @@ public class UserDetailController {
                     .status(orderStatus)
                     .payment(it.getPayment())
                     .description(description)
-                    .shippingFee(it.getShippingFee())
+                    .shippingFee(roundedFloat(it.getShippingFee()))
                     .shop(shop)
                     .createdTime(new Date())
                     .build();
@@ -524,8 +549,13 @@ public class UserDetailController {
 
                 cartProductService.delete(cpi);
             });
+            orders.add(order);
+            List<OrderDetails> ods = orderDetailsService.getByOrder(order);
+            String date = ghnService.shippingOrders(shop, receiveInfo, order, ods, "KHONGCHOXEMHANG");
+            order.setExpectedReceive(date);
+            orderService.save(order);
             if ("ZaloPay Wallet".equals(it.getPayment())) {
-                shop.setWallet(order.getSellPrice() + order.getShippingFee());
+                shop.setWallet(shop.getWallet() + order.getSellPrice());
                 shopService.save(shop);
             }
 
@@ -543,13 +573,22 @@ public class UserDetailController {
     }
 
     @PostMapping("/order/create")
-    public ResponseEntity<String> createOrder(@RequestBody List<CheckOutRequest> checkOutRequests) {
-        orderCreator(checkOutRequests, OrderStatus.PENDING);
+    public ResponseEntity<String> createOrder(@RequestBody List<CheckOutRequest> checkOutRequests) throws Exception {
+        List<Order> orders = new ArrayList<>();
+        orderCreator(checkOutRequests, OrderStatus.PENDING, orders);
+        User user = (User) authenticatedManager.getAuthenticatedUser();
+        orders = orders.stream().map(o -> {
+            List<OrderDetails> orderDetails = orderDetailsService.getByOrder(o);
+            o.setOrderDetails(orderDetails);
+            return o;
+        }).toList();
+        String template = OrderConfirmationTemplate.getTemplete(user.getFirstname(), orders);
+        gmailSender.send("Order Confirmation", template, user.getEmail());
         return ResponseEntity.ok().build();
     }
 
     @PostMapping("/order/special/create")
-    public ResponseEntity<String> createSpecialOrder(@RequestParam("id") Integer productId, @RequestParam("quantity") Optional<Integer> quan) {
+    public ResponseEntity<String> createSpecialOrder(@RequestParam("id") Integer productId, @RequestParam("quantity") Optional<Integer> quan) throws Exception {
         User user = (User) authenticatedManager.getAuthenticatedUser();
         Product product = productService.getProductById(productId);
         ReceiveInfo receiveInfo = receiveInfoService.getDefaultReceiveInfo(user);
@@ -570,6 +609,7 @@ public class UserDetailController {
                 .payment("COD")
                 .description(product.getDescription().substring(0, 150))
                 .shop(shop)
+                .special(true)
                 .createdTime(new Date())
                 .build();
 
@@ -587,8 +627,13 @@ public class UserDetailController {
                 .build();
         orderDetailsService.save(orderDetails);
 
-        product.setAvailable(product.getAvailable() - 1);
-        productService.save(product);
+        try {
+            product.setAvailable(product.getAvailable() - 1);
+            productService.save(product);
+        } catch (IllegalStateException e) {
+            throw new IllegalStateException("Product " + product.getName() + " available isn't enough");
+        }
+
 
         Notification notification = Notification.builder()
                 .title("Your shop has just received a special order")
@@ -600,6 +645,13 @@ public class UserDetailController {
                 .read(false)
                 .build();
         notificationService.save(notification);
+
+        List<Order> orders = new ArrayList<>();
+        List<OrderDetails> orderDetailss = orderDetailsService.getByOrder(order);
+        order.setOrderDetails(orderDetailss);
+        orders.add(order);
+        String template = OrderConfirmationTemplate.getTemplete(user.getFirstname(), orders);
+        gmailSender.send("Order Confirmation", template, user.getEmail());
 
         return ResponseEntity.ok().build();
     }
@@ -795,6 +847,7 @@ public class UserDetailController {
                 .time(request.getTime())
                 .description(request.getDescription())
                 .product(product)
+                .orderId(order.getId())
                 .user(user)
                 .build();
         Feedback feedback = feedbackService.saveSpecial(feedbackRequest);
@@ -842,6 +895,9 @@ public class UserDetailController {
             return ResponseEntity.badRequest().build();
         }
 
+        Report findReport = reportService.getByReporterAndProduct(user, product);
+        if (findReport != null) return ResponseEntity.badRequest().build();
+
         Report report = Report.builder()
                 .reporter(user)
                 .product(product)
@@ -861,6 +917,9 @@ public class UserDetailController {
         if (shop == null || user == null) {
             return ResponseEntity.badRequest().build();
         }
+
+        Report findReport = reportService.getByReporterAndShop(user, shop);
+        if (findReport != null) return ResponseEntity.badRequest().build();
 
         Report report = Report.builder()
                 .reporter(user)

@@ -37,6 +37,7 @@ import com.swp391.backend.model.productSale.ProductSaleDTO;
 import com.swp391.backend.model.productSale.ProductSaleService;
 import com.swp391.backend.model.saleEvent.SaleEvent;
 import com.swp391.backend.model.saleEvent.SaleEventService;
+import com.swp391.backend.model.settings.Setting;
 import com.swp391.backend.model.settings.SettingService;
 import com.swp391.backend.model.shop.Shop;
 import com.swp391.backend.model.shop.ShopDTO;

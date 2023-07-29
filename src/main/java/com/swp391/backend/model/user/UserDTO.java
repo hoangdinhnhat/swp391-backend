@@ -35,4 +35,5 @@ public class UserDTO {
     private Boolean enabled;
     private ReceiveInfo defaultReceiveInfo;
     private List<Integer> shopSubscription;
+    private double wallet;
 }

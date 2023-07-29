@@ -1,14 +1,22 @@
 package com.swp391.backend.model.order;
 
+import com.swp391.backend.model.district.District;
+import com.swp391.backend.model.district.DistrictService;
 import com.swp391.backend.model.orderDetails.OrderDetails;
 import com.swp391.backend.model.orderDetails.OrderDetailsId;
 import com.swp391.backend.model.orderDetails.OrderDetailsService;
 import com.swp391.backend.model.product.Product;
 import com.swp391.backend.model.product.ProductService;
+import com.swp391.backend.model.province.Province;
+import com.swp391.backend.model.province.ProvinceService;
+import com.swp391.backend.model.receiveinfo.ReceiveInfo;
+import com.swp391.backend.model.receiveinfo.ReceiveInfoService;
 import com.swp391.backend.model.shop.Shop;
 import com.swp391.backend.model.shop.ShopService;
 import com.swp391.backend.model.user.User;
 import com.swp391.backend.model.user.UserService;
+import com.swp391.backend.model.ward.Ward;
+import com.swp391.backend.model.ward.WardService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -29,9 +37,17 @@ public class OrderService {
     private final ShopService shopService;
     private final OrderDetailsService orderDetailsService;
     private final ProductService productService;
+    private final WardService wardService;
+    private final DistrictService districtService;
+    private final ProvinceService provinceService;
+    private final ReceiveInfoService receiveInfoService;
 
     public Order save(Order order) {
         return orderRepository.save(order);
+    }
+
+    public void delete(Order order) {
+        orderRepository.delete(order);
     }
 
     public Order getById(String id) {
@@ -340,6 +356,12 @@ public class OrderService {
         return ceil(div);
     }
 
+    public Integer getMaxPageShipper(OrderStatus status, String kw) {
+        var orders =  orderRepository.findByStatusAndAndSpecialAndIdContainingIgnoreCase(status, false, kw);
+        float div = orders.size() * 1.0f / 6;
+        return ceil(div);
+    }
+
     public List<Order> getByShopAndId(Shop shop, String kw, Integer page) {
         Pageable pageable = PageRequest.of(page, 6, Sort.by("createdTime").descending());
         return orderRepository.findByShopAndIdContainingIgnoreCase(shop, kw, pageable);
@@ -358,8 +380,12 @@ public class OrderService {
 
     public List<Order> getByUserAndStatusAndId(User user, OrderStatus status, String kw, Integer page) {
         Pageable pageable = PageRequest.of(page, 6, Sort.by("createdTime").descending());
-        ;
         return orderRepository.findByUserAndStatusAndIdContainingIgnoreCase(user, status, kw, pageable);
+    }
+
+    public List<Order> getByStatusAndNotSpecial(OrderStatus status, String kw, Integer page) {
+        Pageable pageable = PageRequest.of(page, 6, Sort.by("createdTime").descending());
+        return orderRepository.findByStatusAndAndSpecialAndIdContainingIgnoreCase(status, false, kw, pageable);
     }
 
     public String generateOrderId(LocalDateTime localDateTime) {
@@ -374,6 +400,34 @@ public class OrderService {
         Shop shop = shopService.getShopById(2);
         Product p1 = productService.getProductById(22);
         Product p2 = productService.getProductById(25);
+        Ward ward = Ward.builder()
+                .id("1A0218")
+                .name("Phường Tràng Tiền")
+                .build();
+        District district = District.builder()
+                .id(1489)
+                .name("Quận Hoàn Kiếm")
+                .build();
+
+        Province province = Province.builder()
+                .id(201)
+                .name("Hà Nội")
+                .build();
+        wardService.save(ward);
+        districtService.save(district);
+        provinceService.save(province);
+
+        ReceiveInfo receiveInfo = ReceiveInfo.builder()
+                ._default(true)
+                .fullname("Trần Thiện Thanh Bảo")
+                .phone("0914536728")
+                .specific_address("Thảo Điền")
+                .user(user)
+                .ward(ward)
+                .district(district)
+                .province(province)
+                .build();
+        receiveInfoService.saveReceiveInfo(receiveInfo);
 
         LocalDateTime localDateTime = LocalDateTime.now().minusDays(1).minusHours(16);
         Date date = Date
@@ -386,6 +440,7 @@ public class OrderService {
                 .status(OrderStatus.COMPLETED)
                 .payment("Cash On Delivery")
                 .description(p1.getDescription().substring(0, 150))
+                .receiveInfo(receiveInfo)
                 .shop(shop)
                 .createdTime(date)
                 .build();
@@ -421,6 +476,7 @@ public class OrderService {
                 .user(user)
                 .status(OrderStatus.COMPLETED)
                 .payment("Cash On Delivery")
+                .receiveInfo(receiveInfo)
                 .description(p1.getDescription().substring(0, 150))
                 .shop(shop)
                 .createdTime(new Date())

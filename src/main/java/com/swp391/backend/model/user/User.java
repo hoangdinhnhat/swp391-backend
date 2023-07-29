@@ -86,9 +86,11 @@ public class User implements UserDetails {
     @OneToMany(mappedBy = "reporter")
     @JsonBackReference
     private List<Report> reports;
+    private double wallet;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
+
         return List.of(new SimpleGrantedAuthority(role.name()));
     }
 
@@ -131,6 +133,7 @@ public class User implements UserDetails {
                 .firstname(firstname)
                 .lastname(lastname)
                 .enabled(enabled)
+                .wallet(wallet)
                 .imageurl(imageurl)
                 .gender(gender)
                 .build();

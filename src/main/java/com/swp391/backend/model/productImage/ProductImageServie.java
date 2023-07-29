@@ -19,6 +19,11 @@ public class ProductImageServie {
         productImageRepository.deleteById(id);
     }
 
+    public void deleteAll(List<ProductImage> productImages)
+    {
+        productImageRepository.deleteAll(productImages);
+    }
+
     public List<ProductImage> getByProduct(Product product) {
         return productImageRepository.findByProduct(product);
     }

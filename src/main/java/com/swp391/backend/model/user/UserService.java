@@ -132,5 +132,19 @@ public class UserService implements UserDetailsService {
                 .joinAt(new Date())
                 .build();
         save(user4);
+
+        var user5 = User.builder()
+                .firstname("GHN")
+                .lastname("GHN")
+                .email("GHN@gmail.com")
+                .gender(Gender.MALE)
+                .enabled(true)
+                .locked(false)
+                .imageurl("/api/v1/publics/user/avatar/GHN@gmail.com")
+                .password(new BCryptPasswordEncoder().encode("1234"))
+                .role(Role.SHIPPING_UNIT)
+                .joinAt(new Date())
+                .build();
+        save(user5);
     }
 }

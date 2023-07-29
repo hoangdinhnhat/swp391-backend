@@ -112,7 +112,7 @@ public class ShopService {
                 .user(user2)
                 .shopImage("/api/v1/publics/shop/image/1")
                 .shopAddress(shopAddress)
-                .phone("0123456789")
+                .phone("0914536782")
                 .joinTime(new Date())
                 .build();
         save(shop);
@@ -127,7 +127,7 @@ public class ShopService {
                 .user(user)
                 .shopImage("/api/v1/publics/shop/image/2")
                 .shopAddress(shopAddress)
-                .phone("0123456789")
+                .phone("0967892356")
                 .joinTime(new Date())
                 .build();
         save(shop);
@@ -142,7 +142,7 @@ public class ShopService {
                 .user(user3)
                 .shopImage("/api/v1/publics/shop/image/3")
                 .shopAddress(shopAddress)
-                .phone("0123456789")
+                .phone("0956782453")
                 .joinTime(new Date())
                 .build();
         save(shop);

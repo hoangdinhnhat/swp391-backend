@@ -20,8 +20,17 @@ public class ProductSaleService {
         return productSaleRepository.save(productSale);
     }
 
+    public void deleteAll(List<ProductSale> productSales)
+    {
+        productSaleRepository.deleteAll(productSales);
+    }
+
     public List<ProductSale> getALlProductSale() {
         return productSaleRepository.findAll();
+    }
+
+    public List<ProductSale> getBySaleEvent(SaleEvent saleEvent) {
+        return productSaleRepository.findBySaleEvent(saleEvent);
     }
 
     public List<ProductSale> getBySaleEvent(SaleEvent saleEvent, Integer page) {
@@ -31,15 +40,11 @@ public class ProductSaleService {
     }
 
     public ProductSale findProductInSale(Product product) {
-        ProductSale finded = null;
-
-        for (ProductSale ps : getALlProductSale()) {
-            finded = productSaleRepository.findBySaleEvent(ps.getSaleEvent()).stream()
-                    .filter(it -> it.getProduct().getId() == product.getId())
-                    .findFirst().orElse(null);
+        if (product.getProductSales().size() > 0)
+        {
+            return product.getProductSales().get(0);
         }
-
-        return finded;
+        return null;
     }
 
     public void delete(ProductSaleKey id) {

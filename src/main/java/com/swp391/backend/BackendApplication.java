@@ -16,6 +16,7 @@ import com.swp391.backend.model.subscription.SubscriptionService;
 import com.swp391.backend.model.user.UserService;
 import com.swp391.backend.utils.storage.ProductVideoService;
 import com.swp391.backend.utils.storage.StorageProperties;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;

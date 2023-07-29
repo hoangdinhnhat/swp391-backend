@@ -7,5 +7,6 @@ public enum OrderStatus {
     CANCELLED,
     CONTACT,
     SPECIAL_SHOP,
-    SPECIAL_USER
+    SPECIAL_USER,
+    REFUND,
 }

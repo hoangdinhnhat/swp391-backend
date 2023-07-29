@@ -157,7 +157,7 @@ public class ProductService {
     public int getMaxPageOwnShop(Shop shop) {
         List<Product> list = productRepository.findByShop(shop);
         int length = list.size();
-        float div = length * 1.0f / 40;
+        float div = length * 1.0f / 5;
         return ceil(div);
     }
 
@@ -365,7 +365,7 @@ public class ProductService {
             feedbackReplyService.save(feedbackRep2);
         }
         for (int i = 20; i < 40; i++) {
-            double price = Math.round(Math.random() * 99 + 100);
+            double price = Math.round(Math.random() * 100);
             var product1 = Product.builder()
                     .name("African bird's food")
                     .categoryGroup(categoryGroupService.getCategoryGroupById(3))
@@ -432,7 +432,7 @@ public class ProductService {
             productFeedbackImageService.save(pfi2);
         }
         for (int i = 40; i < 60; i++) {
-            double price = Math.round(Math.random() * 99 + 100);
+            double price = Math.round(Math.random() * 100);
             var product1 = Product.builder()
                     .name("African bird's cage")
                     .categoryGroup(categoryGroupService.getCategoryGroupById(4))
@@ -498,7 +498,7 @@ public class ProductService {
             productFeedbackImageService.save(pfi2);
         }
         for (int i = 60; i < 80; i++) {
-            double price = Math.round(Math.random() * 99 + 100);
+            double price = Math.round(Math.random() * 100);
             var product1 = Product.builder()
                     .name("African bird's accessories")
                     .categoryGroup(categoryGroupService.getCategoryGroupById(4))

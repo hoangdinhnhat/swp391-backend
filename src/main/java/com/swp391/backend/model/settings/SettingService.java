@@ -53,9 +53,15 @@ public class SettingService {
                 .value(3)
                 .build();
 
+        var setting5 = Setting.builder()
+                .name("FlashSale")
+                .value(1)
+                .build();
+
         save(setting1);
         save(setting2);
         save(setting3);
         save(setting4);
+        save(setting5);
     }
 }

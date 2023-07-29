@@ -5,6 +5,8 @@ import com.swp391.backend.model.product.Product;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
+import java.util.List;
+
 public interface OrderDetailsRepository extends JpaRepository<OrderDetails, OrderDetailsId> {
     OrderDetails findByOrderAndProduct(Order order, Product product);
 
@@ -93,4 +95,6 @@ public interface OrderDetailsRepository extends JpaRepository<OrderDetails, Orde
                     "AND (o.status = 'SHIPPING' OR o.status = 'COMPLETED')",
             nativeQuery = true)
     Integer getNumberOfSoldProductAnalystByMonthRangePreviousYear(Integer id, int prev, int i);
+
+    List<OrderDetails> findByOrder(Order order);
 }

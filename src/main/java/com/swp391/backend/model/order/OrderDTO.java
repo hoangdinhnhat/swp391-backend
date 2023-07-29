@@ -25,5 +25,8 @@ public class OrderDTO {
     private String payment;
     private String description;
     private double sellPrice;
+    private double soldPrice;
     private String status;
+    private boolean special;
+    private String expectedReceive;
 }

@@ -1,5 +1,7 @@
 package com.swp391.backend.model.orderDetails;
 
+import com.swp391.backend.model.counter.Counter;
+import com.swp391.backend.model.counter.CounterService;
 import com.swp391.backend.model.order.Order;
 import com.swp391.backend.model.order.OrderRepository;
 import com.swp391.backend.model.product.Product;
@@ -8,6 +10,7 @@ import com.swp391.backend.model.productSale.ProductSaleService;
 import com.swp391.backend.model.shop.Shop;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
@@ -21,26 +24,38 @@ public class OrderDetailsService {
     private final OrderDetailsRepository orderDetailsRepository;
     private final OrderRepository orderRepository;
     private final ProductSaleService productSaleService;
+    private final CounterService counterService;
 
-    @Transactional
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public OrderDetails save(OrderDetails orderDetails) {
         Order order = orderDetails.getOrder();
         Product product = orderDetails.getProduct();
-        ProductSale sale = productSaleService.findProductInSale(product);
-
         double price = product.getPrice();
+
+        ProductSale sale = productSaleService.findProductInSale(product);
+        orderDetails.setSellPrice(price);
 
         if (sale != null && sale.getSaleQuantity() > sale.getSold()) {
             int percent = sale.getSaleEvent().getPercent();
             price = price * (1 - percent * 1.0 / 100);
-            price = Math.round(price * 100) / 100;
+            price = Math.round(price * 100) * 1.0 / 100;
         }
 
-        orderDetails.setSellPrice(price);
+        orderDetails.setSoldPrice(price);
         orderDetails.setFeedbacked(false);
-        price *= orderDetails.getQuantity();
 
-        order.setSellPrice(order.getSellPrice() + price);
+        order.setSellPrice(order.getSellPrice() + orderDetails.getSellPrice() * orderDetails.getQuantity());
+        order.setSoldPrice(order.getSoldPrice() + orderDetails.getSoldPrice() * orderDetails.getQuantity());
+        orderRepository.save(order);
+        return orderDetailsRepository.save(orderDetails);
+    }
+
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public OrderDetails saveRefund(OrderDetails orderDetails) {
+        Order order = orderDetails.getOrder();
+
+        order.setSoldPrice(order.getSoldPrice() + orderDetails.getSoldPrice() * orderDetails.getQuantity());
+        order.setSellPrice(order.getSellPrice() + orderDetails.getSellPrice() * orderDetails.getQuantity());
         orderRepository.save(order);
         return orderDetailsRepository.save(orderDetails);
     }
@@ -168,4 +183,12 @@ public class OrderDetailsService {
         return orderDetailsRepository.findByOrderAndProduct(order, product);
     }
 
+    public List<OrderDetails> getByOrder(Order order) {
+        return orderDetailsRepository.findByOrder(order);
+    }
+
+    public OrderDetails getById(OrderDetailsId id)
+    {
+        return orderDetailsRepository.findById(id).orElse(null);
+    }
 }

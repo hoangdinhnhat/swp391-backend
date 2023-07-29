@@ -28,4 +28,5 @@ public class FeedbackDTO {
     private List<FeedbackReply> feedbackReplies;
     private String type;
     private boolean processed;
+    private String orderId;
 }

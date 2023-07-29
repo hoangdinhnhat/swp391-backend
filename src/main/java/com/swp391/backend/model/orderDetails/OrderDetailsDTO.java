@@ -12,5 +12,6 @@ public class OrderDetailsDTO {
     private Product product;
     private Integer quantity;
     private double sellPrice;
+    private double soldPrice;
     private boolean feedbacked;
 }

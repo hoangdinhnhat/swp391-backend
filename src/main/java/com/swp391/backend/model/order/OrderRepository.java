@@ -201,5 +201,9 @@ public interface OrderRepository extends PagingAndSortingRepository<Order, Strin
 
     List<Order> findByUserAndStatusAndIdContainingIgnoreCase(User user, OrderStatus status, String id, Pageable pageable);
 
+    List<Order> findByStatusAndAndSpecialAndIdContainingIgnoreCase(OrderStatus status, Boolean special, String id, Pageable pageable);
+
+    List<Order> findByStatusAndAndSpecialAndIdContainingIgnoreCase(OrderStatus status, Boolean special, String id);
+
     List<Order> findByUserAndStatusAndIdContainingIgnoreCase(User user, OrderStatus status, String id);
 }

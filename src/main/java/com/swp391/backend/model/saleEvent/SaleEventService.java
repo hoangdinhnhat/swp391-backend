@@ -4,6 +4,8 @@ import com.swp391.backend.model.product.ProductService;
 import com.swp391.backend.model.productSale.ProductSale;
 import com.swp391.backend.model.productSale.ProductSaleKey;
 import com.swp391.backend.model.productSale.ProductSaleService;
+import com.swp391.backend.model.settings.Setting;
+import com.swp391.backend.model.settings.SettingService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -33,29 +35,10 @@ public class SaleEventService {
         saleEventRepository.deleteById(id);
     }
 
-    public void init() {
-        SaleEvent event = new SaleEvent();
-        event.setName("Flash Sale");
-        event.setStart(new Date());
-        event.setEndding(new Date());
-        event.setPercent(10);
-        save(event);
-
-        for (int i = 1; i <= 19; i++) {
-            ProductSale ps = new ProductSale();
-            ProductSaleKey pk = new ProductSaleKey();
-            pk.setProductId(i);
-            pk.setSaleEventId(event.getId());
-
-            ps.setProduct(productService.getProductById(i));
-            ps.setSaleEvent(event);
-            ps.setId(pk);
-            ps.setSaleQuantity(10);
-            ps.setSold(3);
-            productSaleService.save(ps);
-        }
-
-        for (int i = 20; i <= 39; i++) {
+    public void initSale()
+    {
+        var event = getSaleEventById(1);
+        for (int i = 20; i <= 27; i++) {
             ProductSale ps = new ProductSale();
             ProductSaleKey pk = new ProductSaleKey();
             pk.setProductId(i);
@@ -69,7 +52,7 @@ public class SaleEventService {
             productSaleService.save(ps);
         }
 
-        for (int i = 40; i <= 59; i++) {
+        for (int i = 40; i <= 47; i++) {
             ProductSale ps = new ProductSale();
             ProductSaleKey pk = new ProductSaleKey();
             pk.setProductId(i);
@@ -83,7 +66,58 @@ public class SaleEventService {
             productSaleService.save(ps);
         }
 
-        for (int i = 60; i <= 79; i++) {
+        for (int i = 60; i <= 67; i++) {
+            ProductSale ps = new ProductSale();
+            ProductSaleKey pk = new ProductSaleKey();
+            pk.setProductId(i);
+            pk.setSaleEventId(event.getId());
+
+            ps.setProduct(productService.getProductById(i));
+            ps.setSaleEvent(event);
+            ps.setId(pk);
+            ps.setSaleQuantity(10);
+            ps.setSold(6);
+            productSaleService.save(ps);
+        }
+    }
+
+    public void init() {
+        SaleEvent event = new SaleEvent();
+        event.setName("Flash Sale");
+        event.setStart(new Date());
+        event.setEndding(new Date());
+        event.setPercent(10);
+        save(event);
+
+        for (int i = 20; i <= 27; i++) {
+            ProductSale ps = new ProductSale();
+            ProductSaleKey pk = new ProductSaleKey();
+            pk.setProductId(i);
+            pk.setSaleEventId(event.getId());
+
+            ps.setProduct(productService.getProductById(i));
+            ps.setSaleEvent(event);
+            ps.setId(pk);
+            ps.setSaleQuantity(10);
+            ps.setSold(2);
+            productSaleService.save(ps);
+        }
+
+        for (int i = 40; i <= 47; i++) {
+            ProductSale ps = new ProductSale();
+            ProductSaleKey pk = new ProductSaleKey();
+            pk.setProductId(i);
+            pk.setSaleEventId(event.getId());
+
+            ps.setProduct(productService.getProductById(i));
+            ps.setSaleEvent(event);
+            ps.setId(pk);
+            ps.setSaleQuantity(10);
+            ps.setSold(4);
+            productSaleService.save(ps);
+        }
+
+        for (int i = 60; i <= 67; i++) {
             ProductSale ps = new ProductSale();
             ProductSaleKey pk = new ProductSaleKey();
             pk.setProductId(i);
