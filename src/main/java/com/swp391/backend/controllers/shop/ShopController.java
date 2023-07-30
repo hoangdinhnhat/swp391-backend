@@ -49,6 +49,7 @@ import com.swp391.backend.model.user.User;
 import com.swp391.backend.model.user.UserService;
 import com.swp391.backend.model.ward.Ward;
 import com.swp391.backend.model.ward.WardService;
+import com.swp391.backend.utils.ghn.GHNService;
 import com.swp391.backend.utils.storage.ProductImageStorageService;
 import com.swp391.backend.utils.storage.StorageService;
 import com.swp391.backend.utils.zalopay_gateway.ZaloPayService;
@@ -92,6 +93,7 @@ public class ShopController {
     private final ShopPlanService shopPlanService;
     private final CounterService counterService;
     private final UserService userService;
+    private final GHNService ghnService;
     private final ZaloPayService zaloPayService = ZaloPayService.gI();
 
     @Autowired
@@ -1242,6 +1244,11 @@ public class ShopController {
                 .read(false)
                 .build();
         notificationService.save(notification);
+
+        List<OrderDetails> ods = orderDetailsService.getByOrder(refundOrder);
+        String date = ghnService.shippingOrders(shop, refundOrder.getReceiveInfo(), refundOrder, ods, "KHONGCHOXEMHANG", refundOrder.getId());
+        refundOrder.setExpectedReceive(date);
+        orderService.save(refundOrder);
 
         orderDetailsService.saveRefund(orderDetails);
         orderDetailsService.delete(findOd);

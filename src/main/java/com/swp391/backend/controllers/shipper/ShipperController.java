@@ -131,14 +131,8 @@ public class ShipperController {
             notificationUser.setContent("Your order has been successfully delivered to you. Thanks for your support!");
             notificationUser.setRedirectUrl("/purchase/complete");
             order.setStatus(OrderStatus.COMPLETED);
-            Counter wallet = counterService.getById("WALLET");
-            order.getOrderDetails().forEach(od -> {
-                double differentPrice = od.getSellPrice() - od.getSoldPrice();
-                wallet.setValue(wallet.getValue() - differentPrice);
-                shop.setWallet(shop.getWallet() + differentPrice);
-            });
+            liquidityForShop(order);
             shopService.save(shop);
-            counterService.save(wallet);
         }
 
         if (action.equals("REJECT")) {

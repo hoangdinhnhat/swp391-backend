@@ -231,7 +231,7 @@ public class ProductService {
 
     public void initor(String name, String des, int order, int category, int shopId)
     {
-        double price = Math.round(Math.random() * 100);
+        double price = Math.round(Math.random() * 100) + 1;
         var product = Product.builder()
                 .name(name)
                 .categoryGroup(categoryGroupService.getCategoryGroupById(category))

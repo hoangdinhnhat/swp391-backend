@@ -28,7 +28,7 @@ public class GHNService {
         }
     };
 
-    public String shippingOrders(Shop shop, ReceiveInfo receiveInfo, Order order, List<OrderDetails> orderDetailss, String requiredNote) {
+    public String shippingOrders(Shop shop, ReceiveInfo receiveInfo, Order order, List<OrderDetails> orderDetailss, String requiredNote, String note) {
         String expectedDeliveryDate = "";
         try {
             CloseableHttpClient client = HttpClients.createDefault();
@@ -93,6 +93,7 @@ public class GHNService {
                     + "                        \"service_type_id\": 2,\n"
                     + "                        \"payment_type_id\": 2,\n"
                     + "                        \"required_note\": \"" + requiredNote + "\",\n"
+                    + "                        \"note\": \"" + note + "\",\n"
                     + "                        \"cod_amount\": " + Math.round(order.getSellPrice() * 23000) + ",\n"
                     + "                        \"items\": [\n"
                     + phoneString

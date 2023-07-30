@@ -555,7 +555,7 @@ public class UserDetailController {
             });
             orders.add(order);
             List<OrderDetails> ods = orderDetailsService.getByOrder(order);
-            String date = ghnService.shippingOrders(shop, receiveInfo, order, ods, "CHOXEMHANG");
+            String date = ghnService.shippingOrders(shop, receiveInfo, order, ods, "CHOXEMHANG", order.getId());
             order.setExpectedReceive(date);
             orderService.save(order);
             if ("ZaloPay Wallet".equals(it.getPayment())) {
