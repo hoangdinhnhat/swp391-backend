@@ -32,10 +32,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 @RestController
 @RequiredArgsConstructor
@@ -70,6 +67,31 @@ public class ShipperController {
                 .map(it -> it.toDto())
                 .toList();
         return ResponseEntity.ok().body(orders);
+    }
+
+    public void liquidityForShop(Order order)
+    {
+        Shop shop = order.getShop();
+        Counter wallet = counterService.getById("WALLET");
+        TimerTask timerTask = new TimerTask() {
+            @Override
+            public void run() {
+                if (!order.isReported())
+                {
+                    shop.setWallet(shop.getWallet() + order.getSellPrice());
+                    shopService.save(shop);
+                    wallet.setValue(wallet.getValue() - order.getSellPrice());
+
+                    counterService.save(wallet);
+                    order.setReported(true);
+                    orderService.save(order);
+                }
+            }
+        };
+
+        long delay = 3 * 24 * 60 * 60 * 1000;
+        Timer timer = new Timer("Timer");
+        timer.schedule(timerTask, delay);
     }
 
     @PostMapping("/order/special/process/{id}")

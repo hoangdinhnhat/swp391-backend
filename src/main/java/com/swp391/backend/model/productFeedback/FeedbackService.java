@@ -25,15 +25,20 @@ public class FeedbackService {
     private final ShopRepository shopRepository;
     private final SettingService settingService;
 
+    public double roundedFloat(double num)
+    {
+        return (double) Math.round(num * 100) / 100;
+    }
+
     @Transactional
     public Feedback save(Feedback feedback) {
         Feedback feedbackReturn = feedbackRepository.saveAndFlush(feedback);
         Product product = productRepository.findById(feedback.getProduct().getId()).orElse(null);
-        product.setRating(product.getRating());
+        product.setRating(roundedFloat(product.getRating()));
         productRepository.saveAndFlush(product);
 
         Shop shop = shopRepository.findById(product.getShop().getId()).orElse(null);
-        shop.setRating(shop.getRating());
+        shop.setRating(roundedFloat(shop.getRating()));
         shopRepository.save(shop);
         return feedbackReturn;
     }

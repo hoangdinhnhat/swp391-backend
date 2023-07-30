@@ -89,7 +89,7 @@ public class SaleEventService {
         event.setPercent(10);
         save(event);
 
-        for (int i = 20; i <= 27; i++) {
+        for (int i = 16; i <= 23; i++) {
             ProductSale ps = new ProductSale();
             ProductSaleKey pk = new ProductSaleKey();
             pk.setProductId(i);
@@ -103,7 +103,7 @@ public class SaleEventService {
             productSaleService.save(ps);
         }
 
-        for (int i = 40; i <= 47; i++) {
+        for (int i = 31; i <= 38; i++) {
             ProductSale ps = new ProductSale();
             ProductSaleKey pk = new ProductSaleKey();
             pk.setProductId(i);
@@ -117,18 +117,18 @@ public class SaleEventService {
             productSaleService.save(ps);
         }
 
-        for (int i = 60; i <= 67; i++) {
-            ProductSale ps = new ProductSale();
-            ProductSaleKey pk = new ProductSaleKey();
-            pk.setProductId(i);
-            pk.setSaleEventId(event.getId());
-
-            ps.setProduct(productService.getProductById(i));
-            ps.setSaleEvent(event);
-            ps.setId(pk);
-            ps.setSaleQuantity(10);
-            ps.setSold(6);
-            productSaleService.save(ps);
-        }
+//        for (int i = 46; i <= 53; i++) {
+//            ProductSale ps = new ProductSale();
+//            ProductSaleKey pk = new ProductSaleKey();
+//            pk.setProductId(i);
+//            pk.setSaleEventId(event.getId());
+//
+//            ps.setProduct(productService.getProductById(i));
+//            ps.setSaleEvent(event);
+//            ps.setId(pk);
+//            ps.setSaleQuantity(10);
+//            ps.setSold(6);
+//            productSaleService.save(ps);
+//        }
     }
 }

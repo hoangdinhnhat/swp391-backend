@@ -596,6 +596,27 @@ public class ShopController {
         return ResponseEntity.ok().body(maxPage);
     }
 
+    @GetMapping("/orders/number")
+    public ResponseEntity<Integer> getNumOfOrder(
+            @RequestParam("keyword") Optional<String> kw,
+            @RequestParam("filter") Optional<OrderStatus> ft
+    ) {
+        Shop shop = getShop();
+        if (shop == null) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        String keyword = kw.orElse("");
+        OrderStatus filter = ft.orElse(null);
+        Integer num = orderService.getNumOfOrder(shop, keyword);
+
+        if (filter != null) {
+            num = orderService.getNumOfOrder(shop, filter, keyword);
+        }
+
+        return ResponseEntity.ok().body(num);
+    }
+
     @GetMapping("/orders/search")
     public ResponseEntity<List<OrderDTO>> searchOrder(
             @RequestParam("keyword") Optional<String> kw,
@@ -1202,18 +1223,28 @@ public class ShopController {
 
         if (order.getPayment().equals("ZaloPay Wallet"))
         {
+            Counter counter = counterService.getById("WALLET");
             User user = feedback.getUser();
             user.setWallet(user.getWallet() + findOd.getSoldPrice() * findOd.getQuantity() + priceRefund);
-            shop.setWallet(shop.getWallet() - findOd.getSellPrice() * findOd.getQuantity());
-            double difference = findOd.getSellPrice() - findOd.getSoldPrice();
-            Counter counter = counterService.getById("WALLET");
-            counter.setValue(counter.getValue() + difference);
+            counter.setValue(counter.getValue() - findOd.getSoldPrice() * findOd.getQuantity() - priceRefund);
+
             userService.save(user);
-            shopService.save(shop);
             counterService.save(counter);
         }
 
+        Notification notification = Notification.builder()
+                .title(String.format("Shop % agrees to your refund request.", shop.getName()))
+                .content("Due to careless delivery, the shop agrees to your return request.")
+                .imageUrl(shop.getShopImage())
+                .redirectUrl("/seller/portal/order/refund")
+                .user(feedback.getUser())
+                .createdAt(new Date())
+                .read(false)
+                .build();
+        notificationService.save(notification);
+
         orderDetailsService.saveRefund(orderDetails);
+        orderDetailsService.delete(findOd);
         feedbackService.save(feedback);
         return ResponseEntity.ok().build();
     }
@@ -1227,6 +1258,18 @@ public class ShopController {
 
         Feedback feedback = feedbackService.getById(fId);
         feedback.setProcessed(true);
+
+        Notification notification = Notification.builder()
+                .title(String.format("Shop %s declined your request for a refund.", shop.getName()))
+                .content("Due to the reason that the items were delivered with no errors from the shop, the shop refused to request a refund.")
+                .imageUrl(shop.getShopImage())
+                .redirectUrl("/seller/portal/order/complete")
+                .user(feedback.getUser())
+                .createdAt(new Date())
+                .read(false)
+                .build();
+        notificationService.save(notification);
+
         feedbackService.save(feedback);
         return ResponseEntity.ok().build();
     }
@@ -1249,7 +1292,7 @@ public class ShopController {
         feedbackReplyService.save(feedbackRep);
 
         Notification notification = Notification.builder()
-                .title(String.format("Shop %s vừa phản hồi feedback của bạn", shop.getName()))
+                .title(String.format("Shop %s just reply your feedback", shop.getName()))
                 .content(request.getResponse())
                 .imageUrl("/api/v1/publics/product/image/" + feedback.getProduct().getId() + "?imgId=1")
                 .redirectUrl("/product?productId=" + feedback.getProduct().getId())

@@ -60,6 +60,16 @@ public class OrderDetailsService {
         return orderDetailsRepository.save(orderDetails);
     }
 
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void delete(OrderDetails orderDetails) {
+        Order order = orderDetails.getOrder();
+
+        order.setSoldPrice(order.getSoldPrice() - orderDetails.getSoldPrice() * orderDetails.getQuantity());
+        order.setSellPrice(order.getSellPrice() - orderDetails.getSellPrice() * orderDetails.getQuantity());
+        orderRepository.save(order);
+        orderDetailsRepository.delete(orderDetails);
+    }
+
     public List<Integer> getNumberOfSoldProductAnalystInDay(Shop shop) {
         List<Integer> rs = new ArrayList<>();
         int hourRange = Math.round(Math.round(Math.floor(LocalDateTime.now().getHour() * 1.0 / 6))) + 1;

@@ -1,5 +1,6 @@
 package com.swp391.backend.model.report;
 
+import com.swp391.backend.model.order.Order;
 import com.swp391.backend.model.product.Product;
 import com.swp391.backend.model.shop.Shop;
 import com.swp391.backend.model.user.User;
@@ -27,6 +28,11 @@ public class ReportService {
         return reportRepository.findByReporterAndProduct(reporter, product);
     }
 
+    public Report getByReporterAndOrder(User reporter, Order order)
+    {
+        return reportRepository.findByReporterAndOrder(reporter, order);
+    }
+
     public void deleteById(Integer id) {
         reportRepository.deleteById(id);
     }
@@ -42,5 +48,9 @@ public class ReportService {
 
     public List<Report> getShopReport() {
         return reportRepository.findByShopIsNotNullAndAction("UNPROCESS");
+    }
+
+    public List<Report> getOrderReport() {
+        return reportRepository.findByOrderIsNotNullAndAction("UNPROCESS");
     }
 }

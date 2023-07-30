@@ -229,6 +229,88 @@ public class ProductService {
         productRepository.deleteById(id);
     }
 
+    public void initor(String name, String des, int order, int category, int shopId)
+    {
+        double price = Math.round(Math.random() * 100);
+        var product = Product.builder()
+                .name(name)
+                .categoryGroup(categoryGroupService.getCategoryGroupById(category))
+                .shop(shopService.getShopById(shopId))
+                .video("/api/v1/publics/product/video/" + 3)
+                .uploadTime(new Date())
+                .description(des)
+                .available(1)
+                .price(price)
+                .build();
+        save(product);
+
+        for (int j = 1; j <= 4; j++) {
+            var pI = ProductImage.builder()
+                    .product(product)
+                    .url("/api/v1/publics/product/image/" + order + "?imgId=" + j)
+                    .build();
+            productImageService.save(pI);
+        }
+
+
+        List<CategoryDetailInfo> categoryDetailInfos = categoryDetailInfoService.getByCategory(product.getCategoryGroup().getCategory());
+        categoryDetailInfos.forEach(it -> {
+            String value = "";
+            if (it.getName().equals("Age")) {
+                value = "More than 1 year";
+            } else if (it.getName().equals("Weight")) {
+                value = "1kg";
+            } else if (it.getName().equals("Brand")) {
+                value = shopService.getShopById(3).getName();
+            } else {
+                value = "Natural";
+            }
+
+            var pdi = ProductDetailInfo.builder()
+                    .categoryDetailInfo(it)
+                    .value(value)
+                    .product(product)
+                    .build();
+            productDetailInfoService.save(pdi);
+        });
+
+        Feedback feedback = null;
+        float rd = Math.round(Math.random());
+        if (rd == 0) {
+            feedback = Feedback.builder()
+                    .rate(4)
+                    .time(new Date())
+                    .type("RATE PRODUCT")
+                    .description("Pretty Fine")
+                    .videoUrl("/api/v1/publics/product/feedbacks/video/1")
+                    .product(product)
+                    .user((User) userService.loadUserByUsername("tranthienthanhbao@gmail.com"))
+                    .build();
+        } else {
+            feedback = Feedback.builder()
+                    .rate(1)
+                    .time(new Date())
+                    .type("RATE PRODUCT")
+                    .description("So Bad")
+                    .videoUrl("/api/v1/publics/product/feedbacks/video/1")
+                    .product(product)
+                    .user((User) userService.loadUserByUsername("tranthienthanhbao@gmail.com"))
+                    .build();
+        }
+        feedbackService.save(feedback);
+
+        var pfi = ProductFeedbackImage.builder()
+                .url("/api/v1/publics/product/feedbacks/image/" + 1 + "?imgId=1")
+                .feedback(feedback)
+                .build();
+        var pfi2 = ProductFeedbackImage.builder()
+                .url("/api/v1/publics/product/feedbacks/image/" + 1 + "?imgId=2")
+                .feedback(feedback)
+                .build();
+        productFeedbackImageService.save(pfi);
+        productFeedbackImageService.save(pfi2);
+    }
+
     public void init() {
         String des = "\uD83D\uDC69 PRODUCT DESCRIPTION\n" +
                 "\n" +
@@ -260,321 +342,69 @@ public class ProductService {
                 "  \n" +
                 "   ⚠\uFE0F NOTE: When opening the product, please return to the video of the product opening process to be 100% guaranteed to exchange for a new product if the VENDER T-shirt delivered is faulty.";
 
-        for (int i = 1; i < 20; i++) {
-            double price = Math.round(Math.random() * 99 + 100);
-            var product1 = Product.builder()
-                    .name("African crested bird")
-                    .categoryGroup(categoryGroupService.getCategoryGroupById(1))
-                    .shop(shopService.getShopById(1))
-                    .video("/api/v1/publics/product/video/" + 1)
-                    .uploadTime(new Date())
-                    .description(des)
-                    .available(20)
-                    .price(price)
-                    .build();
-            save(product1);
 
-            for (int j = 1; j <= 4; j++) {
-                var pI = ProductImage.builder()
-                        .product(product1)
-                        .url("/api/v1/publics/product/image/" + i + "?imgId=" + j)
-                        .build();
-                productImageService.save(pI);
-            }
+        initor("Vietnamese Greenfinch", des, 1, 3,1);
+        initor("Collared Laughingthrush", des, 2,3, 1);
+        initor("Grey-crowned Crocias", des, 3, 3, 1);
+        initor("Indochinese Green Magpie", des, 4, 3, 1);
+        initor("Aegithina tiphia", des, 5, 3, 1);
+        initor("Alophoixus pallidus", des, 6, 3, 1);
+        initor("Aegithina lafresnayei", des, 7, 3, 1);
+        initor("Pycnonotus jocosus", des, 8, 3, 1);
+        initor("Streptopelia chinensis", des, 9, 3, 1);
+        initor("Pnoepyga immaculata", des, 10, 3, 1);
+        initor("Columba livia", des, 11, 3, 1);
+        initor("Acridotheres tristis", des, 12, 3, 1);
+        initor("Lonchura domestica", des, 13, 3, 1);
+        initor("Amandava amandava", des, 14, 3, 1);
+        initor("Turdus philomelos", des, 15, 3, 1);
 
+        initor("Nectar for the Gods", des, 16, 6,2);
+        initor("Suet Cakes", des, 17,6, 2);
+        initor("Black Oil Sunflower Seeds", des, 18, 6, 2);
+        initor("Nyjer Seed", des, 19, 6, 2);
+        initor("Cracked Corn", des, 20, 6, 2);
+        initor("Peanuts", des, 21, 6, 2);
+        initor("Millet", des, 22, 6, 2);
+        initor("Fruit Blend", des, 23, 6, 2);
+        initor("Mealworms", des, 24, 6, 2);
+        initor("Suet Balls", des, 25, 6, 2);
+        initor("Winter Blend", des, 26, 6, 2);
+        initor("Annual Blend", des, 27, 6, 2);
+        initor("No-Waste Seed Mix", des, 28, 6, 2);
+        initor("Hummingbird Feeder", des, 29, 6, 2);
+        initor("Bird Bath", des, 30, 6, 2);
 
-            List<CategoryDetailInfo> categoryDetailInfos = categoryDetailInfoService.getByCategory(product1.getCategoryGroup().getCategory());
-            categoryDetailInfos.forEach(it -> {
-                String value = "";
-                if (it.getName().equals("Age")) {
-                    value = "More than 1 year";
-                } else if (it.getName().equals("Weight")) {
-                    value = "1kg";
-                } else if (it.getName().equals("Brand")) {
-                    value = shopService.getShopById(1).getName();
-                } else {
-                    value = "Natural";
-                }
+        initor("Shanghai Parakeet Cage", des, 31, 9, 3);
+        initor("Beach Dome Top Bird Cage", des, 32, 9, 3);
+        initor("Bird Travel Carrier Cage", des, 33, 9, 3);
+        initor("PawHut Bird Cage", des, 34, 9, 3);
+        initor("Outdoor Bird Cage", des, 35, 9, 3);
+        initor("WOODEN BIRD CAGE", des, 36, 9, 3);
+        initor("Wooden Bird Cage vintage", des, 37, 9, 3);
+        initor("Chinese Hexagons Bird Cage", des, 38, 9, 3);
+        initor("Bamboo Carving Bird Cage", des, 39, 9, 3);
+        initor("Natural Bamboo Bird Cage", des, 40, 9, 3);
+        initor("Playtop Parrot Bird Cage", des, 41, 9, 3);
+        initor("Vision Bird Cage", des, 42, 9, 3);
+        initor("Segawe Bird Cage", des, 43, 9, 3);
+        initor("Metal Hexagon Birdcage", des, 44, 9, 3);
+        initor("Wire Bird Cage", des, 45, 9,3);
 
-                var pdi = ProductDetailInfo.builder()
-                        .categoryDetailInfo(it)
-                        .value(value)
-                        .product(product1)
-                        .build();
-                productDetailInfoService.save(pdi);
-            });
-
-            var feedback1 = Feedback.builder()
-                    .rate(4)
-                    .time(new Date())
-                    .type("RATE PRODUCT")
-                    .description("Pretty Fine")
-                    .videoUrl("/api/v1/publics/product/feedbacks/video/1")
-                    .product(product1)
-                    .user((User) userService.loadUserByUsername("vuducthien@gmail.com"))
-                    .build();
-
-            feedbackService.save(feedback1);
-
-            var pfi = ProductFeedbackImage.builder()
-                    .url("/api/v1/publics/product/feedbacks/image/" + 1 + "?imgId=1")
-                    .feedback(feedback1)
-                    .build();
-            var pfi2 = ProductFeedbackImage.builder()
-                    .url("/api/v1/publics/product/feedbacks/image/" + 1 + "?imgId=2")
-                    .feedback(feedback1)
-                    .build();
-            productFeedbackImageService.save(pfi);
-            productFeedbackImageService.save(pfi2);
-
-            var feedbackRep = FeedbackReply.builder()
-                    .feedback(feedback1)
-                    .content("We would like to thank our users for their continued support of our product. We are always working to improve the product, and we appreciate your feedback. We know that there are still some features that are missing, and we are sorry for any inconvenience this may cause. We are working hard to add these features as soon as possible.")
-                    .build();
-
-            feedbackReplyService.save(feedbackRep);
-
-            var feedback2 = Feedback.builder()
-                    .rate(4)
-                    .time(new Date())
-                    .type("RATE PRODUCT")
-                    .description("Pretty Fine")
-                    .videoUrl("/api/v1/publics/product/feedbacks/video/1")
-                    .product(product1)
-                    .user((User) userService.loadUserByUsername("tranthienthanhbao@gmail.com"))
-                    .build();
-
-            feedbackService.save(feedback2);
-
-            var pfi1 = ProductFeedbackImage.builder()
-                    .url("/api/v1/publics/product/feedbacks/image/" + 1 + "?imgId=1")
-                    .feedback(feedback2)
-                    .build();
-            var pfi22 = ProductFeedbackImage.builder()
-                    .url("/api/v1/publics/product/feedbacks/image/" + 1 + "?imgId=2")
-                    .feedback(feedback2)
-                    .build();
-            productFeedbackImageService.save(pfi1);
-            productFeedbackImageService.save(pfi22);
-
-            var feedbackRep2 = FeedbackReply.builder()
-                    .feedback(feedback2)
-                    .content("We would like to thank our users for their continued support of our product. We are always working to improve the product, and we appreciate your feedback. We know that there are still some features that are missing, and we are sorry for any inconvenience this may cause. We are working hard to add these features as soon as possible.")
-                    .build();
-
-            feedbackReplyService.save(feedbackRep2);
-        }
-        for (int i = 20; i < 40; i++) {
-            double price = Math.round(Math.random() * 100);
-            var product1 = Product.builder()
-                    .name("African bird's food")
-                    .categoryGroup(categoryGroupService.getCategoryGroupById(3))
-                    .shop(shopService.getShopById(2))
-                    .video("/api/v1/publics/product/video/" + 1)
-                    .uploadTime(new Date())
-                    .description(des)
-                    .available(20)
-                    .price(price)
-                    .build();
-            save(product1);
-
-            for (int j = 1; j <= 4; j++) {
-                var pI = ProductImage.builder()
-                        .product(product1)
-                        .url("/api/v1/publics/product/image/" + i + "?imgId=" + j)
-                        .build();
-                productImageService.save(pI);
-            }
-
-
-            List<CategoryDetailInfo> categoryDetailInfos = categoryDetailInfoService.getByCategory(product1.getCategoryGroup().getCategory());
-            categoryDetailInfos.forEach(it -> {
-                String value = "";
-                if (it.getName().equals("Age")) {
-                    value = "More than 1 year";
-                } else if (it.getName().equals("Weight")) {
-                    value = "1kg";
-                } else if (it.getName().equals("Brand")) {
-                    value = shopService.getShopById(2).getName();
-                } else {
-                    value = "Natural";
-                }
-
-                var pdi = ProductDetailInfo.builder()
-                        .categoryDetailInfo(it)
-                        .value(value)
-                        .product(product1)
-                        .build();
-                productDetailInfoService.save(pdi);
-            });
-
-            var feedback1 = Feedback.builder()
-                    .rate(4)
-                    .time(new Date())
-                    .type("RATE PRODUCT")
-                    .description("Pretty Fine")
-                    .videoUrl("/api/v1/publics/product/feedbacks/video/1")
-                    .product(product1)
-                    .user((User) userService.loadUserByUsername("tranthienthanhbao@gmail.com"))
-                    .build();
-
-            feedbackService.save(feedback1);
-
-            var pfi = ProductFeedbackImage.builder()
-                    .url("/api/v1/publics/product/feedbacks/image/" + 1 + "?imgId=1")
-                    .feedback(feedback1)
-                    .build();
-            var pfi2 = ProductFeedbackImage.builder()
-                    .url("/api/v1/publics/product/feedbacks/image/" + 1 + "?imgId=2")
-                    .feedback(feedback1)
-                    .build();
-            productFeedbackImageService.save(pfi);
-            productFeedbackImageService.save(pfi2);
-        }
-        for (int i = 40; i < 60; i++) {
-            double price = Math.round(Math.random() * 100);
-            var product1 = Product.builder()
-                    .name("African bird's cage")
-                    .categoryGroup(categoryGroupService.getCategoryGroupById(4))
-                    .shop(shopService.getShopById(3))
-                    .uploadTime(new Date())
-                    .description(des)
-                    .available(20)
-                    .price(price)
-                    .build();
-            save(product1);
-
-            for (int j = 1; j <= 4; j++) {
-                var pI = ProductImage.builder()
-                        .product(product1)
-                        .url("/api/v1/publics/product/image/" + i + "?imgId=" + j)
-                        .build();
-                productImageService.save(pI);
-            }
-
-
-            List<CategoryDetailInfo> categoryDetailInfos = categoryDetailInfoService.getByCategory(product1.getCategoryGroup().getCategory());
-            categoryDetailInfos.forEach(it -> {
-                String value = "";
-                if (it.getName().equals("Age")) {
-                    value = "More than 1 year";
-                } else if (it.getName().equals("Weight")) {
-                    value = "1kg";
-                } else if (it.getName().equals("Brand")) {
-                    value = shopService.getShopById(3).getName();
-                } else {
-                    value = "Natural";
-                }
-
-                var pdi = ProductDetailInfo.builder()
-                        .categoryDetailInfo(it)
-                        .value(value)
-                        .product(product1)
-                        .build();
-                productDetailInfoService.save(pdi);
-            });
-
-            var feedback1 = Feedback.builder()
-                    .rate(4)
-                    .time(new Date())
-                    .type("RATE PRODUCT")
-                    .description("Pretty Fine")
-                    .videoUrl("/api/v1/publics/product/feedbacks/video/1")
-                    .product(product1)
-                    .user((User) userService.loadUserByUsername("tranthienthanhbao@gmail.com"))
-                    .build();
-
-            feedbackService.save(feedback1);
-
-            var pfi = ProductFeedbackImage.builder()
-                    .url("/api/v1/publics/product/feedbacks/image/" + 1 + "?imgId=1")
-                    .feedback(feedback1)
-                    .build();
-            var pfi2 = ProductFeedbackImage.builder()
-                    .url("/api/v1/publics/product/feedbacks/image/" + 1 + "?imgId=2")
-                    .feedback(feedback1)
-                    .build();
-            productFeedbackImageService.save(pfi);
-            productFeedbackImageService.save(pfi2);
-        }
-        for (int i = 60; i < 80; i++) {
-            double price = Math.round(Math.random() * 100);
-            var product1 = Product.builder()
-                    .name("African bird's accessories")
-                    .categoryGroup(categoryGroupService.getCategoryGroupById(4))
-                    .shop(shopService.getShopById(3))
-                    .uploadTime(new Date())
-                    .description(des)
-                    .available(20)
-                    .price(price)
-                    .build();
-            save(product1);
-
-            for (int j = 1; j <= 4; j++) {
-                var pI = ProductImage.builder()
-                        .product(product1)
-                        .url("/api/v1/publics/product/image/" + i + "?imgId=" + j)
-                        .build();
-                productImageService.save(pI);
-            }
-
-
-            List<CategoryDetailInfo> categoryDetailInfos = categoryDetailInfoService.getByCategory(product1.getCategoryGroup().getCategory());
-            categoryDetailInfos.forEach(it -> {
-                String value = "";
-                if (it.getName().equals("Age")) {
-                    value = "More than 1 year";
-                } else if (it.getName().equals("Weight")) {
-                    value = "1kg";
-                } else if (it.getName().equals("Brand")) {
-                    value = shopService.getShopById(3).getName();
-                } else {
-                    value = "Natural";
-                }
-
-                var pdi = ProductDetailInfo.builder()
-                        .categoryDetailInfo(it)
-                        .value(value)
-                        .product(product1)
-                        .build();
-                productDetailInfoService.save(pdi);
-            });
-
-            Feedback feedback1 = null;
-            float rd = Math.round(Math.random());
-            if (rd == 0) {
-                feedback1 = Feedback.builder()
-                        .rate(4)
-                        .time(new Date())
-                        .type("RATE PRODUCT")
-                        .description("Pretty Fine")
-                        .videoUrl("/api/v1/publics/product/feedbacks/video/1")
-                        .product(product1)
-                        .user((User) userService.loadUserByUsername("tranthienthanhbao@gmail.com"))
-                        .build();
-            } else {
-                feedback1 = Feedback.builder()
-                        .rate(1)
-                        .time(new Date())
-                        .type("RATE PRODUCT")
-                        .description("So Bad")
-                        .videoUrl("/api/v1/publics/product/feedbacks/video/1")
-                        .product(product1)
-                        .user((User) userService.loadUserByUsername("tranthienthanhbao@gmail.com"))
-                        .build();
-            }
-            feedbackService.save(feedback1);
-
-            var pfi = ProductFeedbackImage.builder()
-                    .url("/api/v1/publics/product/feedbacks/image/" + 1 + "?imgId=1")
-                    .feedback(feedback1)
-                    .build();
-            var pfi2 = ProductFeedbackImage.builder()
-                    .url("/api/v1/publics/product/feedbacks/image/" + 1 + "?imgId=2")
-                    .feedback(feedback1)
-                    .build();
-            productFeedbackImageService.save(pfi);
-            productFeedbackImageService.save(pfi2);
-        }
+        initor("Kaytee Foraging Toys", des, 46, 13, 3);
+        initor("BWOGUE 5-Piece Bird Toy Set", des, 47, 13, 3);
+        initor("SunGrow Chewing Toy", des, 48, 13, 3);
+        initor("Bonka Bird Toys 1969 Spoon Delight", des, 49, 13, 3);
+        initor("Prevue Hendryx Rope Ladder", des, 50, 13, 3);
+        initor("Niteangel Natural Living Playground", des, 51, 13, 3);
+        initor("Yaheetech Bird Ladder", des, 52, 13, 3);
+        initor("Paradise Parrot Toys Hanging Bell", des, 53, 13, 3);
+        initor("KAYTEE Foraging Snack Ball", des, 54, 13, 3);
+        initor("PetFusion Hanging Macaw Toy", des, 55, 13, 3);
+        initor("Wood Swing Bird Chew Toy", des, 56, 13, 3);
+        initor("Stainless Steel Bird Bell", des, 57, 13, 3);
+        initor("Bird Kabob Chiquito Chew Toy", des, 58, 13, 3);
+        initor("Cuttlebone", des, 59, 13, 3);
+        initor("Bird Mirror", des, 60, 13, 3);
     }
 }

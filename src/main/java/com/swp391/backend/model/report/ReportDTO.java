@@ -1,6 +1,7 @@
 package com.swp391.backend.model.report;
 
 import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.swp391.backend.model.order.OrderDTO;
 import com.swp391.backend.model.product.Product;
 import com.swp391.backend.model.product.ProductDTO;
 import com.swp391.backend.model.shop.Shop;
@@ -23,6 +24,7 @@ public class ReportDTO {
     private Shop shop;
 
     private ProductDTO product;
+    private OrderDTO order;
 
     private String reasonType;
     private String reasonSpecific;

@@ -79,23 +79,58 @@ public class CategoryGroupService {
                 .build();
 
         CategoryGroup group3 = CategoryGroup.builder()
+                .name("Bird General")
+                .category(categoryService.getById(1))
+                .build();
+
+        CategoryGroup group4 = CategoryGroup.builder()
+                .name("Red-whiskered bulbul's food")
+                .category(categoryService.getById(2))
+                .build();
+
+        CategoryGroup group5 = CategoryGroup.builder()
                 .name("Sparrow's food")
                 .category(categoryService.getById(2))
                 .build();
 
-        CategoryGroup group4 = CategoryGroup.builder()
+        CategoryGroup group6 = CategoryGroup.builder()
+                .name("Bird's food general")
+                .category(categoryService.getById(2))
+                .build();
+
+        CategoryGroup group7 = CategoryGroup.builder()
+                .name("Red-whiskered bulbul's cage")
+                .category(categoryService.getById(3))
+                .build();
+
+        CategoryGroup group8 = CategoryGroup.builder()
                 .name("Sparrow's cage")
                 .category(categoryService.getById(3))
                 .build();
 
-        CategoryGroup group5 = CategoryGroup.builder()
-                .name("Bird's cage")
+        CategoryGroup group9 = CategoryGroup.builder()
+                .name("Bird's cage general")
                 .category(categoryService.getById(3))
                 .build();
 
-        CategoryGroup group6 = CategoryGroup.builder()
+        CategoryGroup group10 = CategoryGroup.builder()
                 .name("Inox Bird's cage")
                 .category(categoryService.getById(3))
+                .build();
+
+        CategoryGroup group11 = CategoryGroup.builder()
+                .name("Red-whiskered bulbul's accessory")
+                .category(categoryService.getById(4))
+                .build();
+
+        CategoryGroup group12 = CategoryGroup.builder()
+                .name("Sparrow's accessory")
+                .category(categoryService.getById(4))
+                .build();
+
+        CategoryGroup group13 = CategoryGroup.builder()
+                .name("Bird's accessory general")
+                .category(categoryService.getById(4))
                 .build();
 
         save(group1);
@@ -104,5 +139,12 @@ public class CategoryGroupService {
         save(group4);
         save(group5);
         save(group6);
+        save(group7);
+        save(group8);
+        save(group9);
+        save(group10);
+        save(group11);
+        save(group12);
+        save(group13);
     }
 }

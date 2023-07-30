@@ -4,6 +4,7 @@
  */
 package com.swp391.backend.security;
 
+import com.google.api.client.util.DateTime;
 import com.swp391.backend.model.counter.CounterService;
 import com.swp391.backend.model.user.User;
 import com.swp391.backend.model.user.UserRepository;
@@ -23,6 +24,8 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.Date;
 
 /**
@@ -70,7 +73,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
             if (jwtService.isTokenValid(jwt, userDetails)) {
                 User appUser = (User) userDetails;
-                appUser.setTimeout(new Date(System.currentTimeMillis() + 1000 * 60 * 30));
+                LocalDateTime localDateTime = LocalDateTime.now();
+                localDateTime.plusMinutes(60);
+                Date newTimeOut = Date.from(localDateTime.atZone(ZoneId.systemDefault()).toInstant());
+                appUser.setTimeout(newTimeOut);
 
                 var counter = counterService.getById("VISIT_PAGE");
                 counter.setValue(counter.getValue() + 1);

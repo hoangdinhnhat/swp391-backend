@@ -2,6 +2,7 @@ package com.swp391.backend.model.order;
 
 import com.swp391.backend.model.orderDetails.OrderDetailsDTO;
 import com.swp391.backend.model.receiveinfo.ReceiveInfo;
+import com.swp391.backend.model.report.Report;
 import com.swp391.backend.model.shop.ShopDTO;
 import com.swp391.backend.model.user.User;
 import lombok.Builder;
@@ -29,4 +30,6 @@ public class OrderDTO {
     private String status;
     private boolean special;
     private String expectedReceive;
+    private List<Report> reports;
+    private boolean reported;
 }

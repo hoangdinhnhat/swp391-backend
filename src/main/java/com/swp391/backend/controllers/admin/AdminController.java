@@ -162,6 +162,16 @@ public class AdminController {
         return ResponseEntity.ok().body(reports);
     }
 
+    @GetMapping("/management/report/order")
+    public ResponseEntity<List<ReportDTO>> getOrderReports() {
+        var reports = reportService.getOrderReport()
+                .stream()
+                .map(Report::toDto)
+                .toList();
+
+        return ResponseEntity.ok().body(reports);
+    }
+
     @GetMapping("/management/report/shop")
     public ResponseEntity<List<Report>> getShopReports() {
         var reports = reportService.getShopReport();

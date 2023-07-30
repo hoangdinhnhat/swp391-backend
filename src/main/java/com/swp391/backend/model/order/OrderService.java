@@ -356,6 +356,18 @@ public class OrderService {
         return ceil(div);
     }
 
+    public Integer getNumOfOrder(Shop shop, String kw)
+    {
+        var orders = orderRepository.findByShopAndIdContainingIgnoreCase(shop, kw);
+        return orders.size();
+    }
+
+    public Integer getNumOfOrder(Shop shop, OrderStatus status, String kw)
+    {
+        var orders = orderRepository.findByShopAndStatusAndIdContainingIgnoreCase(shop, status, kw);
+        return orders.size();
+    }
+
     public Integer getMaxPageShipper(OrderStatus status, String kw) {
         var orders =  orderRepository.findByStatusAndAndSpecialAndIdContainingIgnoreCase(status, false, kw);
         float div = orders.size() * 1.0f / 6;

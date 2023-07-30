@@ -14,6 +14,8 @@ import com.swp391.backend.model.cartProduct.CartProduct;
 import com.swp391.backend.model.cartProduct.CartProductDTO;
 import com.swp391.backend.model.cartProduct.CartProductKey;
 import com.swp391.backend.model.cartProduct.CartProductService;
+import com.swp391.backend.model.counter.Counter;
+import com.swp391.backend.model.counter.CounterService;
 import com.swp391.backend.model.district.District;
 import com.swp391.backend.model.district.DistrictService;
 import com.swp391.backend.model.notification.Notification;
@@ -104,6 +106,7 @@ public class UserDetailController {
     private final ReportService reportService;
     private final EmailSender gmailSender;
     private final GHNService ghnService;
+    private final CounterService counterService;
     private ZaloPayService zaloPayService = ZaloPayService.gI();
 
     @Autowired
@@ -465,6 +468,7 @@ public class UserDetailController {
         if (!check) {
             return null;
         }
+
         List<CheckOutRequest> checkOutRequests = (List<CheckOutRequest>) temporaryStorage.getTemporaryObject();
         List<Order> orders = new ArrayList<>();
         orderCreator(checkOutRequests, OrderStatus.SHIPPING, orders);
@@ -551,12 +555,12 @@ public class UserDetailController {
             });
             orders.add(order);
             List<OrderDetails> ods = orderDetailsService.getByOrder(order);
-            String date = ghnService.shippingOrders(shop, receiveInfo, order, ods, "KHONGCHOXEMHANG");
+            String date = ghnService.shippingOrders(shop, receiveInfo, order, ods, "CHOXEMHANG");
             order.setExpectedReceive(date);
             orderService.save(order);
             if ("ZaloPay Wallet".equals(it.getPayment())) {
-                shop.setWallet(shop.getWallet() + order.getSellPrice());
-                shopService.save(shop);
+                Counter wallet = counterService.getById("WALLET");
+                wallet.setValue(wallet.getValue() + order.getSoldPrice() + order.getShippingFee());
             }
 
             Notification notification = Notification.builder()
@@ -929,6 +933,33 @@ public class UserDetailController {
                 .action("UNPROCESS")
                 .build();
 
+        reportService.save(report);
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/order/report/{id}")
+    public ResponseEntity<String> sendOrderReport(@RequestBody ReportRequest request) {
+        Order order = orderService.getById(request.getOrderId());
+        User user = (User) userService.getById(request.getReporterId());
+
+        if (order == null || user == null) {
+            return ResponseEntity.badRequest().build();
+        }
+
+        Report findReport = reportService.getByReporterAndOrder(user, order);
+        if (findReport != null) return ResponseEntity.badRequest().build();
+
+        Report report = Report.builder()
+                .reporter(user)
+                .order(order)
+                .reasonType(request.getReasonType())
+                .reasonSpecific(request.getReasonSpecific())
+                .action("UNPROCESS")
+                .build();
+
+        order.setReported(true);
+
+        orderService.save(order);
         reportService.save(report);
         return ResponseEntity.ok().build();
     }

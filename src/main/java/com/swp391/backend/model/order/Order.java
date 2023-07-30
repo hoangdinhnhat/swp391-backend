@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.swp391.backend.model.orderDetails.OrderDetails;
 import com.swp391.backend.model.receiveinfo.ReceiveInfo;
+import com.swp391.backend.model.report.Report;
 import com.swp391.backend.model.shop.Shop;
 import com.swp391.backend.model.user.User;
 import jakarta.persistence.*;
@@ -43,6 +44,11 @@ public class Order {
     @JsonManagedReference
     private List<OrderDetails> orderDetails;
 
+    @OneToMany(mappedBy = "order")
+    @JsonBackReference
+    private List<Report> reports;
+    private boolean reported;
+
     private Date createdTime;
     private double shippingFee;
     private String payment;
@@ -75,6 +81,8 @@ public class Order {
                 .soldPrice(soldPrice)
                 .status(status.name())
                 .special(special)
+                .reported(reported)
+                .reports(reports)
                 .build();
     }
 }
