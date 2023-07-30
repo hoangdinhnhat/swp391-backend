@@ -74,7 +74,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             if (jwtService.isTokenValid(jwt, userDetails)) {
                 User appUser = (User) userDetails;
                 LocalDateTime localDateTime = LocalDateTime.now();
-                localDateTime = localDateTime.plusMinutes(60);
+                localDateTime = localDateTime.plusMinutes(120);
                 Date newTimeOut = Date.from(localDateTime.atZone(ZoneId.systemDefault()).toInstant());
                 appUser.setTimeout(newTimeOut);
 

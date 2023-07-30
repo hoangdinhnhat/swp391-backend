@@ -1235,23 +1235,24 @@ public class ShopController {
         }
 
         Notification notification = Notification.builder()
-                .title(String.format("Shop % agrees to your refund request.", shop.getName()))
+                .title(String.format("Shop %s agrees to your refund request.", shop.getName()))
                 .content("Due to careless delivery, the shop agrees to your return request.")
                 .imageUrl(shop.getShopImage())
-                .redirectUrl("/seller/portal/order/refund")
+                .redirectUrl("/purchase/refund")
                 .user(feedback.getUser())
                 .createdAt(new Date())
                 .read(false)
                 .build();
         notificationService.save(notification);
 
+        orderDetailsService.saveRefund(orderDetails);
+        orderDetailsService.delete(findOd);
+
         List<OrderDetails> ods = orderDetailsService.getByOrder(refundOrder);
-        String date = ghnService.shippingOrders(shop, refundOrder.getReceiveInfo(), refundOrder, ods, "KHONGCHOXEMHANG", refundOrder.getId());
+        String date = ghnService.shippingOrders(shop, refundOrder.getReceiveInfo(), refundOrder, ods, "KHONGCHOXEMHANG", "REFUND ORDER: " + refundOrder.getId());
         refundOrder.setExpectedReceive(date);
         orderService.save(refundOrder);
 
-        orderDetailsService.saveRefund(orderDetails);
-        orderDetailsService.delete(findOd);
         feedbackService.save(feedback);
         return ResponseEntity.ok().build();
     }

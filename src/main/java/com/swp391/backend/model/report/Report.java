@@ -2,6 +2,7 @@ package com.swp391.backend.model.report;
 
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import com.swp391.backend.model.order.Order;
+import com.swp391.backend.model.order.OrderDTO;
 import com.swp391.backend.model.product.Product;
 import com.swp391.backend.model.product.ProductDTO;
 import com.swp391.backend.model.shop.Shop;
@@ -57,12 +58,18 @@ public class Report {
                     .build();
         }
 
+        OrderDTO orderDTO = null;
+        if (product != null)
+        {
+            orderDTO = order.toDto();
+        }
+
         ReportDTO reportDTO = ReportDTO
                 .builder()
                 .id(id)
                 .reporter(reporter.toDto())
                 .product(productDTO)
-                .order(order.toDto())
+                .order(orderDTO)
                 .reasonType(reasonType)
                 .reasonSpecific(reasonSpecific)
                 .build();

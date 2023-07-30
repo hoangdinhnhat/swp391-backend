@@ -382,6 +382,46 @@ public class AdminController {
         return ResponseEntity.ok().build();
     }
 
+    @PostMapping("/report/order/{id}")
+    public ResponseEntity<String> reportProcessOrder(
+            @PathVariable("id") Integer reportId,
+            @RequestParam("action") Optional<String> act
+    ) {
+        String action = act.orElse(null);
+        Report report = reportService.getById(reportId);
+        if (action == null || report == null) return ResponseEntity.badRequest().build();
+
+        User user = report.getReporter();
+
+        Notification notification = Notification.builder()
+                .imageUrl(user.getImageurl())
+                .user(user)
+                .createdAt(new Date())
+                .read(false)
+                .build();
+
+        String notiTitle = "";
+        String notiContent = "";
+
+        if (action.equals("WARNING")) {
+            notiTitle = "Warning for fraud.";
+            notiContent = String.format("We have confirmed that you have indeed successfully received your order %s but still report not received. We send you the first warning.", report.getOrder().getId());
+
+        } else if (action.equals("CONFIRM")) {
+            notiTitle = "Confirmed that the order has not been received even though it has been delivered.";
+            notiContent = String.format("Sorry for these inconveniences. We have confirmed that there is a problem on the shipping side about the %s order. We have refunded you. Again apologize to you.", report.getOrder().getId());
+        }
+
+        notification.setTitle(notiTitle);
+        notification.setContent(notiContent);
+        notificationService.save(notification);
+
+        report.setAction("PROCESSED");
+        reportService.save(report);
+
+        return ResponseEntity.ok().build();
+    }
+
 
     @GetMapping("/wallet/")
     public ResponseEntity<Double> getWallet() {
