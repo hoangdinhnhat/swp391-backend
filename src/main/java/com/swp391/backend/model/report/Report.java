@@ -59,7 +59,7 @@ public class Report {
         }
 
         OrderDTO orderDTO = null;
-        if (product != null)
+        if (order != null)
         {
             orderDTO = order.toDto();
         }
