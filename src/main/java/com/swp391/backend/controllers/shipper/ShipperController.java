@@ -63,11 +63,28 @@ public class ShipperController {
     {
         String keyword = kw.orElse("");
         Integer page = pg.orElse(1) - 1;
+        List<OrderDTO> result = new ArrayList<>();
         List<OrderDTO> orders = orderService.getByStatusAndNotSpecial(OrderStatus.SHIPPING, keyword, page)
                 .stream()
                 .map(it -> it.toDto())
                 .toList();
-        return ResponseEntity.ok().body(orders);
+
+        List<OrderDTO> orders2 = orderService.getByStatusAndNotSpecial(OrderStatus.REFUND, keyword, page)
+                .stream()
+                .map(it -> it.toDto())
+                .toList();
+
+        for (OrderDTO order : orders)
+        {
+            result.add(order);
+        }
+
+        for (OrderDTO order : orders2)
+        {
+            result.add(order);
+        }
+
+        return ResponseEntity.ok().body(result);
     }
 
     public void liquidityForShop(Order order)
@@ -128,7 +145,6 @@ public class ShipperController {
             notificationUser.setTitle("Delivery successful!");
             notificationUser.setContent("Your order has been successfully delivered to you. Thanks for your support!");
             notificationUser.setRedirectUrl("/purchase/complete");
-            order.setStatus(OrderStatus.COMPLETED);
             if (order.getStatus().equals(OrderStatus.REFUND))
             {
                 Counter counter = counterService.getById("WALLET");
@@ -137,7 +153,10 @@ public class ShipperController {
 
                 userService.save(user);
                 counterService.save(counter);
-            }else liquidityForShop(order);
+            }else {
+                order.setStatus(OrderStatus.COMPLETED);
+                liquidityForShop(order);
+            }
         }
 
         if (action.equals("REJECT")) {
