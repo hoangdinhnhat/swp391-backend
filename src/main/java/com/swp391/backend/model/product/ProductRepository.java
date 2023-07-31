@@ -87,7 +87,7 @@ public interface ProductRepository extends PagingAndSortingRepository<Product, I
                     "from Product p " +
                     "inner join CategoryGroup cg " +
                     "on cg = p.categoryGroup " +
-                    "where cg.category = ?1"
+                    "where cg.category = ?1 and p.ban = false"
     )
     List<Product> findByCategory(Category category, Pageable pageable);
 
@@ -96,7 +96,7 @@ public interface ProductRepository extends PagingAndSortingRepository<Product, I
                     "from Product p " +
                     "inner join CategoryGroup cg " +
                     "on cg = p.categoryGroup " +
-                    "where cg.category = ?1"
+                    "where cg.category = ?1 and p.ban = false"
     )
     List<Product> findByCategory(Category category);
 }

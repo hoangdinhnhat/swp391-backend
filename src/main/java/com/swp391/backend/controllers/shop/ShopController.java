@@ -449,6 +449,7 @@ public class ShopController {
 
         int count = 0;
         var services = (ProductImageStorageService) productImageStorageService;
+
         for (MultipartFile image : images) {
             count++;
             services.store(image, product.getId().toString(), count + ".jpg");
@@ -468,7 +469,7 @@ public class ShopController {
 
             var pdi = ProductDetailInfo.builder()
                     .categoryDetailInfo(it)
-                    .value(productDetail.getValue())
+                    .value(productDetail.getValue().trim().isEmpty() ? "No Provided" : productDetail.getValue())
                     .product(product)
                     .build();
             productDetailInfoService.save(pdi);
@@ -536,6 +537,9 @@ public class ShopController {
         if (images != null) {
             int count = 0;
             var services = (ProductImageStorageService) productImageStorageService;
+            var productImages = productImageServie.getByProduct(product);
+            productImageServie.deleteAll(productImages);
+
             for (MultipartFile image : images) {
                 count++;
                 services.store(image, product.getId().toString(), count + ".jpg");
@@ -572,6 +576,7 @@ public class ShopController {
             return ResponseEntity.badRequest().build();
         }
         product.setShop(null);
+        product.setBan(true);
         product.setBan(true);
         productService.save(product);
         return ResponseEntity.ok().body("Delete product successfully!");

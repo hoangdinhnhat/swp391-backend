@@ -76,16 +76,13 @@ public class ShipperController {
         TimerTask timerTask = new TimerTask() {
             @Override
             public void run() {
-                if (!order.isReported())
-                {
-                    shop.setWallet(shop.getWallet() + order.getSellPrice());
-                    shopService.save(shop);
-                    wallet.setValue(wallet.getValue() - order.getSellPrice());
+                shop.setWallet(shop.getWallet() + order.getSellPrice());
+                shopService.save(shop);
+                wallet.setValue(wallet.getValue() - order.getSellPrice());
 
-                    counterService.save(wallet);
-                    order.setReported(true);
-                    orderService.save(order);
-                }
+                counterService.save(wallet);
+                order.setReported(true);
+                orderService.save(order);
             }
         };
 
@@ -132,7 +129,6 @@ public class ShipperController {
             notificationUser.setRedirectUrl("/purchase/complete");
             order.setStatus(OrderStatus.COMPLETED);
             liquidityForShop(order);
-            shopService.save(shop);
         }
 
         if (action.equals("REJECT")) {

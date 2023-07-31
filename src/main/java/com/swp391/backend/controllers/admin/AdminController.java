@@ -1,9 +1,11 @@
 package com.swp391.backend.controllers.admin;
 
 import com.swp391.backend.model.category.CategoryService;
+import com.swp391.backend.model.counter.Counter;
 import com.swp391.backend.model.counter.CounterService;
 import com.swp391.backend.model.notification.Notification;
 import com.swp391.backend.model.notification.NotificationService;
+import com.swp391.backend.model.order.Order;
 import com.swp391.backend.model.order.OrderService;
 import com.swp391.backend.model.product.Product;
 import com.swp391.backend.model.product.ProductDTO;
@@ -138,14 +140,15 @@ public class AdminController {
 
     @PostMapping("/management/setting/update")
     public ResponseEntity<List<Setting>> updateSettings(@RequestBody List<Setting> settings) {
+        Setting after = settingService.getById(5);
         var savedSettings = settingService.saveAll(settings);
-        Setting setting = settingService.getById(5);
+        Setting before = settingService.getById(5);
         SaleEvent saleEvent = saleEventService.getSaleEventById(1);
-        if (setting.getValue() != 1)
+        if (before.getValue() != 1)
         {
             var productSales =  productSaleService.getBySaleEvent(saleEvent);
             productSaleService.deleteAll(productSales);
-        }else
+        }else if (before.getValue() == 1 && after.getValue() != 1)
         {
             saleEventService.initSale();
         }
@@ -392,6 +395,7 @@ public class AdminController {
         if (action == null || report == null) return ResponseEntity.badRequest().build();
 
         User user = report.getReporter();
+        Order order = report.getOrder();
 
         Notification notification = Notification.builder()
                 .imageUrl(user.getImageurl())
@@ -410,6 +414,14 @@ public class AdminController {
         } else if (action.equals("CONFIRM")) {
             notiTitle = "Confirmed that the order has not been received even though it has been delivered.";
             notiContent = String.format("Sorry for these inconveniences. We have confirmed that there is a problem on the shipping side about the %s order. We have refunded you. Again apologize to you.", report.getOrder().getId());
+            if ("ZaloPay Wallet".equals(order.getPayment()))
+            {
+                Counter wallet = counterService.getById("WALLET");
+                user.setWallet(user.getWallet() + order.getSoldPrice() + order.getShippingFee());
+                wallet.setValue(wallet.getValue() - order.getSoldPrice() - order.getShippingFee());
+                userService.save(user);
+                counterService.save(wallet);
+            }
         }
 
         notification.setTitle(notiTitle);
