@@ -45,6 +45,7 @@ public class ShipperController {
     private final ProductSaleService productSaleService;
     private final CounterService counterService;
     private final ShopService shopService;
+    private final UserService userService;
 
     @GetMapping("/max-page")
     public ResponseEntity<Integer> getMaxPage(@RequestParam("keyword") Optional<String> kw)
@@ -128,7 +129,15 @@ public class ShipperController {
             notificationUser.setContent("Your order has been successfully delivered to you. Thanks for your support!");
             notificationUser.setRedirectUrl("/purchase/complete");
             order.setStatus(OrderStatus.COMPLETED);
-            liquidityForShop(order);
+            if (order.getStatus().equals(OrderStatus.REFUND))
+            {
+                Counter counter = counterService.getById("WALLET");
+                user.setWallet(user.getWallet() + order.getSoldPrice() + order.getShippingFee());
+                counter.setValue(counter.getValue() - order.getSoldPrice() - order.getShippingFee());
+
+                userService.save(user);
+                counterService.save(counter);
+            }else liquidityForShop(order);
         }
 
         if (action.equals("REJECT")) {
