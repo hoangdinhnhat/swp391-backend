@@ -210,7 +210,7 @@ public class ShopController {
         if (isValid) return ResponseEntity.badRequest().build();
 
         ShopPlan shopPlan = shopPlanService.getByPlan(plan);
-        String gatewayUrl = zaloPayService.createGatewayUrl(shopPlan.getPrice() * 23000, "shop/registe?plan=" + plan);
+        String gatewayUrl = zaloPayService.createGatewayUrl(Math.round(shopPlan.getPrice() * 23000), "shop/registe?plan=" + plan);
         return ResponseEntity.ok().body(gatewayUrl);
     }
 

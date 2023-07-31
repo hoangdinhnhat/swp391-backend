@@ -19,7 +19,7 @@ public class ShopPlan {
     @Id
     private String plan;
     private Integer duration;
-    private int price;
+    private float price;
 
     @OneToMany(mappedBy = "shopPlan")
     @JsonBackReference

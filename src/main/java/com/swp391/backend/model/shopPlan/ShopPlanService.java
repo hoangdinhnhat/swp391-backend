@@ -30,7 +30,7 @@ public class ShopPlanService {
         var shopPlan2 = ShopPlan.builder()
                 .plan("GOLD")
                 .duration(30 * 3)
-                .price(60)
+                .price(0.05f)
                 .build();
 
         var shopPlan3 = ShopPlan.builder()
